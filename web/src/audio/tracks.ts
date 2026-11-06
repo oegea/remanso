@@ -20,6 +20,7 @@ export interface Track {
 export const TRACKS: Track[] = [
   { id: 'pagina-en-blanco', title: 'Página en blanco', file: 'pagina-en-blanco.mp3', uses: ['write'], desc: 'Piano de fieltro y Rhodes sobre un pulso lento y suave; nada que reclame atención.', seconds: 183 },
   { id: 'orilla', title: 'Orilla', file: 'orilla.mp3', uses: ['calm'], desc: 'Cuerdas largas y un piano con mucho aire, sin ritmo; quieta y cálida.', seconds: 224 },
+  { id: 'bajo-la-manta', title: 'Bajo la manta', file: 'bajo-la-manta.mp3', uses: ['sleep'], desc: 'Un colchón grave y cálido que cambia muy despacio; sin melodía ni ritmo.', seconds: 179 },
 ];
 
 export function track(id: string): Track | undefined {
