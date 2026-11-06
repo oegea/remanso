@@ -156,8 +156,8 @@ export function totals(db: Database): { sessions: number; minutes: number } {
 
 // ----- Preferencias (en la base cifrada, tabla settings) -----
 
-export interface Prefs { minutes: number; voice: boolean; vibrate: boolean; gong: boolean; background: string }
-const DEFAULTS: Prefs = { minutes: 10, voice: false, vibrate: true, gong: true, background: '' };
+export interface Prefs { minutes: number; voice: boolean; voiceName: string; vibrate: boolean; gong: boolean; background: string }
+const DEFAULTS: Prefs = { minutes: 10, voice: false, voiceName: '', vibrate: true, gong: true, background: '' };
 
 export function prefs(db: Database): Prefs {
   const raw = db.scalar<string>("SELECT value FROM settings WHERE key = 'meditation_prefs'");

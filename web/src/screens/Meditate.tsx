@@ -16,7 +16,7 @@ import { Sheet, Confirm } from '../ui/Sheet';
 import { Breath } from '../ui/Breath';
 import { TextEditor } from '../ui/Editor';
 import { announce } from '../ui/Live';
-import { canSpeak, canVibrate, gong, hush, keepAwake, speak, vibrate, voiceName } from '../audio/cues';
+import { canSpeak, canVibrate, gong, hush, keepAwake, setPreferredVoice, spanishVoices, speak, vibrate, voiceName } from '../audio/cues';
 import { player } from '../audio/player';
 import { SOUNDS, type SoundId } from '../audio/catalog';
 import { TRACKS, track } from '../audio/tracks';
@@ -41,7 +41,16 @@ export function Meditate() {
   const [open, setOpen] = useState<med.Session | null>(null);
   const [prefs, setPrefsState] = useState(() => med.prefs(db));
   const setPrefs = (p: Partial<med.Prefs>) => setPrefsState(med.setPrefs(db, p));
-  useEffect(() => { med.discardUnfinished(db); if (canSpeak()) window.speechSynthesis.getVoices(); }, [db]);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => spanishVoices());
+  useEffect(() => {
+    med.discardUnfinished(db);
+    if (!canSpeak()) return;
+    const refresh = () => setVoices(spanishVoices());
+    refresh();
+    window.speechSynthesis.addEventListener('voiceschanged', refresh);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', refresh);
+  }, [db]);
+  useEffect(() => { setPreferredVoice(prefs.voiceName || null); }, [prefs.voiceName]);
   const sessions = useMemo(() => med.list(db), [db, dataVersion]);
   const totals = useMemo(() => med.totals(db), [db, dataVersion]);
   const t = today();
@@ -63,9 +72,14 @@ export function Meditate() {
           <div className="list">
             <OptRow label={HELP.MED_VOICE} help={canSpeak() ? HELP.MED_VOICE_HELP : HELP.MED_VOICE_NA} on={prefs.voice && canSpeak()} disabled={!canSpeak()} onChange={(v) => setPrefs({ voice: v })} />
             {prefs.voice && canSpeak() && (
-              <div className="list-item" style={{ minHeight: 44 }}>
-                <span className="grow t-foot t-muted">{voiceName() ? HELP.MED_VOICE_USING.replace('{v}', voiceName()!) : HELP.MED_VOICE_NONE_ES}</span>
-                <button className="btn btn-text" onClick={() => speak(HELP.MED_VOICE_SAMPLE)}><Icon name="play" size={16} /> {HELP.MED_VOICE_TEST}</button>
+              <div className="list-item" style={{ flexWrap: 'wrap', gap: 8 }}>
+                <span className="grow" style={{ flexBasis: '100%' }}><span>{HELP.MED_VOICE_PICK}</span><span className="meta" style={{ display: 'block' }}>{voices.length ? HELP.MED_VOICE_PICK_HELP : HELP.MED_VOICE_NONE_ES}</span></span>
+                {voices.length > 0 && (
+                  <select className="input" style={{ flex: '1 1 160px', minHeight: 36, padding: '4px 10px' }} aria-label={HELP.MED_VOICE_PICK} value={prefs.voiceName && voices.some((v) => v.name === prefs.voiceName) ? prefs.voiceName : (voiceName() ?? '')} onChange={(e) => setPrefs({ voiceName: e.target.value })}>
+                    {voices.map((v) => <option key={v.name} value={v.name}>{v.name} ({v.lang}{v.localService ? '' : ', en línea'})</option>)}
+                  </select>
+                )}
+                <button className="btn btn-secondary" onClick={() => speak(HELP.MED_VOICE_SAMPLE)}><Icon name="play" size={16} /> {HELP.MED_VOICE_TEST}</button>
               </div>
             )}
             <OptRow label={HELP.MED_VIBRATE} help={canVibrate() ? undefined : HELP.MED_VIBRATE_NA} on={prefs.vibrate && canVibrate()} disabled={!canVibrate()} onChange={(v) => setPrefs({ vibrate: v })} />
@@ -147,6 +161,7 @@ export function MeditateSession() {
   // Arranque: fila en la base, pantalla encendida, fondo, gong y primera indicación.
   useEffect(() => {
     if (!setup.current) { navigate('/meditar'); return; }
+    setPreferredVoice(prefs.voiceName || null);
     pending = null;
     rowId.current = med.start(db, plan, Math.floor(Date.now() / 1000));
     void keepAwake().then((r) => { release.current = r; });

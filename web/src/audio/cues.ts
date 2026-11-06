@@ -57,11 +57,25 @@ export function canSpeak(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined';
 }
 
+let preferredName: string | null = null;
+
+/** Voces en español disponibles, las de España primero. */
+export function spanishVoices(): SpeechSynthesisVoice[] {
+  if (!canSpeak()) return [];
+  const es = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith('es'));
+  return [...es.filter((v) => v.lang.toLowerCase() === 'es-es'), ...es.filter((v) => v.lang.toLowerCase() !== 'es-es')];
+}
+
+/** Elige la voz por nombre (se guarda en las preferencias de meditación). */
+export function setPreferredVoice(name: string | null): void { preferredName = name; }
+
 function spanishVoice(): SpeechSynthesisVoice | null {
-  const voices = window.speechSynthesis.getVoices();
-  const es = voices.filter((v) => v.lang.toLowerCase().startsWith('es'));
-  // Preferir voces locales de España; si no, cualquier español.
-  return es.find((v) => v.lang.toLowerCase() === 'es-es' && v.localService) ?? es.find((v) => v.localService) ?? es[0] ?? null;
+  const es = spanishVoices();
+  if (preferredName) { const p = es.find((v) => v.name === preferredName); if (p) return p; }
+  // En macOS, Chrome lista voces que no están descargadas y las reproduce en silencio: las
+  // «premium» (Mónica, Jorge…) suelen faltar; las voces en línea de Google y las del sistema
+  // más básicas suelen funcionar. Preferimos, por este orden: Google, locales de España, cualquiera.
+  return es.find((v) => /google/i.test(v.name)) ?? es.find((v) => v.lang.toLowerCase() === 'es-es' && v.localService) ?? es[0] ?? null;
 }
 
 // Chrome deja de hablar si la frase se recoge en el recolector de basura, y a veces se traga
@@ -83,8 +97,14 @@ export function speak(text: string, volume = 0.9): void {
     const v = spanishVoice();
     if (v) u.voice = v;
     current = u;
+    u.onerror = (e) => console.warn('[voz] error', e.error);
     u.onend = () => { if (current === u) current = null; };
-    window.setTimeout(() => { if (current === u) s.speak(u); }, wasSpeaking ? 120 : 0);
+    // Chrome (sobre todo en macOS) se queda a veces en un estado en el que «habla» sin que
+    // arranque nada, y afecta a todo el navegador. Un pause() + resume() justo antes lo
+    // desatasca; comprobado: sin ello la frase nunca empieza, con ello suena entera.
+    const go = () => { try { s.pause(); s.resume(); } catch { /* nada */ } s.speak(u); };
+    if (wasSpeaking) window.setTimeout(() => { if (current === u) go(); }, 120);
+    else go();
   } catch { /* sin voz */ }
 }
 

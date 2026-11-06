@@ -119,6 +119,8 @@ export const HELP = {
   MED_VOICE_TEST: 'Probar la voz',
   MED_VOICE_SAMPLE: 'Hola. Así sonará la voz durante la sesión: pocas palabras, y luego silencio.',
   MED_VOICE_USING: 'Voz: {v}',
+  MED_VOICE_PICK: 'Qué voz',
+  MED_VOICE_PICK_HELP: 'Si una voz no suena al probarla, es que tu sistema la lista pero no la tiene descargada: prueba otra.',
   MED_VOICE_NONE_ES: 'No hay ninguna voz en español en este dispositivo; se usará la que haya.',
   MED_PART_LEFT: 'en total',
   MED_VIBRATE: 'Vibración al cambiar de parte',
