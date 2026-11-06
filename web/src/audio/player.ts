@@ -15,6 +15,9 @@ export interface PlayerState {
   timerMinutes: number;
   /** Momento (ms de reloj) en que se apagará, si hay temporizador en marcha. */
   endsAt: number | null;
+  /** Tiempo sonando antes de la última pausa (ms) y momento de la última reanudación. */
+  elapsedBefore: number;
+  playingSince: number | null;
   use: Use | null;
 }
 
@@ -32,6 +35,8 @@ let state: PlayerState = {
   volume: read(KEY_VOL, 0.6, (s) => Math.min(1, Math.max(0, Number(s) || 0.6))),
   timerMinutes: 0,
   endsAt: null,
+  elapsedBefore: 0,
+  playingSince: null,
   use: read<Use | null>(KEY_USE, null, (s) => (['write', 'calm', 'sleep'].includes(s) ? (s as Use) : null)),
 };
 const listeners = new Set<() => void>();
@@ -81,16 +86,29 @@ function armTimer(): void {
   stopTimer = setTimeout(() => void player.stop(), state.timerMinutes * 60_000);
 }
 
+/** Milisegundos que lleva sonando el sonido actual (contando pausas como tiempo parado). */
+export function elapsed(): number {
+  return state.elapsedBefore + (state.playingSince ? Date.now() - state.playingSince : 0);
+}
+
+/** «12:34» o «1:02:03». */
+export function fmtElapsed(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  const mm = h ? String(m).padStart(2, '0') : String(m);
+  return `${h ? h + ':' : ''}${mm}:${String(sec).padStart(2, '0')}`;
+}
+
 export const player = {
   async play(id: SoundId): Promise<void> {
     ensureHandlers();
     await engine.play(id, state.volume);
-    set({ soundId: id, status: 'playing' });
+    set({ soundId: id, status: 'playing', elapsedBefore: 0, playingSince: Date.now() });
     armTimer();
   },
   async pause(): Promise<void> {
     if (!state.soundId || state.status !== 'playing') return;
-    set({ status: 'paused' });
+    set({ status: 'paused', elapsedBefore: elapsed(), playingSince: null });
     clearTimers();
     set({ endsAt: null });
     await engine.pause();
@@ -98,13 +116,13 @@ export const player = {
   async resume(): Promise<void> {
     if (!state.soundId || state.status === 'playing') return;
     await engine.resume(state.volume);
-    set({ status: 'playing' });
+    set({ status: 'playing', playingSince: Date.now() });
     armTimer();
   },
   async toggle(): Promise<void> { return state.status === 'playing' ? player.pause() : player.resume(); },
   async stop(): Promise<void> {
     clearTimers();
-    set({ soundId: null, status: 'paused', endsAt: null });
+    set({ soundId: null, status: 'paused', endsAt: null, elapsedBefore: 0, playingSince: null });
     await engine.stop();
   },
   async next(): Promise<void> {

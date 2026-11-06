@@ -4,11 +4,11 @@ vi.mock('./engine', () => ({
   engine: { play: vi.fn(async () => {}), pause: vi.fn(async () => {}), resume: vi.fn(async () => {}), stop: vi.fn(async () => {}), setVolume: vi.fn(), fadeOut: vi.fn() },
 }));
 
-import { player } from './player';
+import { player, elapsed, fmtElapsed } from './player';
 import { engine } from './engine';
 
 describe('reproductor', () => {
-  beforeEach(async () => { vi.useRealTimers(); await player.stop(); vi.clearAllMocks(); });
+  beforeEach(async () => { vi.useRealTimers(); await player.stop(); player.setTimer(0); vi.clearAllMocks(); });
   it('arranca, pausa, reanuda y para, y sólo suena por un gesto explícito', async () => {
     expect(player.state.soundId).toBeNull();
     await player.play('rain_soft');
@@ -37,6 +37,19 @@ describe('reproductor', () => {
     expect(engine.fadeOut).toHaveBeenCalled();
     vi.advanceTimersByTime(30_000);
     expect(player.state.soundId).toBeNull();
+    vi.useRealTimers();
+  });
+  it('cuenta el tiempo sonando y lo congela en pausa', async () => {
+    vi.useFakeTimers();
+    await player.play('fire');
+    vi.advanceTimersByTime(65_000);
+    expect(fmtElapsed(elapsed())).toBe('1:05');
+    await player.pause();
+    vi.advanceTimersByTime(30_000);
+    expect(fmtElapsed(elapsed())).toBe('1:05');
+    await player.resume();
+    vi.advanceTimersByTime(3_600_000);
+    expect(fmtElapsed(elapsed())).toBe('1:01:05');
     vi.useRealTimers();
   });
   it('el volumen se acota entre 0 y 1', () => {

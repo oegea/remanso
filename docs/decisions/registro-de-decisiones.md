@@ -213,6 +213,13 @@ la evidencia manda.
   puede durar más de treinta minutos (nota B); encajaría como variante de la espera activa.
 - Paridad de la versión de terminal con los cambios de la web.
 - Sonidos, fase 2: pistas musicales instrumentales (CC0 verificadas y propias) servidas bajo
-  demanda con «guardar para sin conexión», licencia propia en carpeta aparte.
+  demanda con «guardar para sin conexión», licencia propia en carpeta aparte. Lección de la
+  fase 1: la síntesis da bien la lluvia, los ruidos y el fuego, pero el mar (y en menor
+  medida el viento y el arroyo) no convence con filtros; para esos ambientes conviene usar
+  grabaciones reales CC0 en bucles cortos de uno o dos minutos. Dos trampas encontradas:
+  los trémolos rápidos sobre siseo suenan a válvula de olla a presión, y las rampas
+  exponenciales de ganancia suben de golpe al final (suenan a golpe); usar envolventes en
+  campana (`Engine.bell`). Las ráfagas muy densas (más de ~100 fuentes por segundo) cortan
+  el audio.
 - Sección de meditación (idea en estudio); hasta entonces los sonidos no se enlazan desde
   la respiración guiada.

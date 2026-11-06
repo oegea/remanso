@@ -102,10 +102,10 @@ export const HELP = {
     'Aquí irán apareciendo las cosas del día: las acciones que hayas planeado para hoy, los recordatorios que toquen, las tareas pendientes y, si las enciendes, las revisiones disponibles. Todo eso se crea desde las secciones de abajo y desde «Más». El botón «Impulso» está siempre a mano, para cuando aparezca uno.',
   ],
   // Sonidos de fondo.
-  SOUNDS_INTRO: 'Sonidos de fondo para mientras escribes, para calmarte o para dormir. Los genera la propia aplicación, así que no descargan nada ni tienen licencia. Nada suena si tú no lo pones.',
+  SOUNDS_INTRO: 'Sonidos de fondo para mientras escribes, para calmarte o para dormir. Nada suena si tú no lo pones, y lo que pongas no se acaba solo: sigue hasta que lo pares o hasta la hora de apagado que elijas.',
   SOUNDS_WHAT_Q: '¿Qué son estos sonidos y qué se sabe de ellos?',
   SOUNDS_WHAT: [
-    'Son ruidos continuos (blanco, rosa, marrón, gris) y ambientes (lluvia, olas, viento, arroyo, fuego) que Remanso sintetiza en tu dispositivo con capas de ruido filtrado, vaivenes lentos y pequeñas ráfagas al azar. No hay ficheros: por eso ocupan cero megas, no se repiten nunca igual y no dependen de ninguna licencia.',
+    'Son ambientes (lluvia, olas, viento, arroyo, fuego) y ruidos continuos (blanco, rosa, marrón, gris) para tener de fondo. No tienen principio ni fin: suenan hasta que los pares, y nunca se repiten igual. El reproductor muestra cuánto tiempo llevan sonando y, si pones un apagado, cuánto queda.',
     'Qué dice la investigación. Para calmarse hay buena base: la música lenta y los sonidos de naturaleza reducen la activación y la ansiedad de forma consistente. Para dormir, un sonido continuo ayuda sobre todo a conciliar el sueño cuando hay ruido alrededor, y el ruido rosa tiene algún estudio pequeño favorable. Para escribir o concentrarse la evidencia es floja: la música de fondo no mejora leer ni escribir, aunque sí el ánimo. Por eso aquí los sonidos se ofrecen como ambiente que a algunas personas les gusta, no como una técnica.',
     'Dos límites. En un iPhone, una web instalada deja de sonar al apagar la pantalla; en Android y en ordenador sigue sonando y puedes controlarla desde la pantalla de bloqueo. Y sigue sonando aunque Remanso se bloquee por inactividad: pararlo es siempre un toque.',
   ],
@@ -114,6 +114,7 @@ export const HELP = {
   SOUNDS_TIMER_HELP: 'Baja el volumen poco a poco en el último medio minuto y se para. Útil para dormir.',
   SOUNDS_USE_ALL: 'Todos',
   SOUNDS_PLAYING: 'sonando',
+  SOUNDS_ELAPSED: 'lleva {t}',
   SOUNDS_PAUSED: 'en pausa',
   SOUNDS_NOW: 'Suena ahora',
   SOUNDS_ENDS: 'se apaga en {t}',

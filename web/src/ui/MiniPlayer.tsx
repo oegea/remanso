@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import { usePlayer, player } from '../audio/player';
+import { usePlayer, player, elapsed, fmtElapsed } from '../audio/player';
 import { sound, fmtRemaining } from '../audio/catalog';
 import { Icon } from './Icon';
 import { HELP } from '../text/help';
@@ -14,10 +14,10 @@ export function MiniPlayer({ raised }: { raised: boolean }) {
   const p = usePlayer();
   const [, tick] = useState(0);
   useEffect(() => {
-    if (!p.endsAt) return;
-    const t = window.setInterval(() => tick((x) => x + 1), 30_000);
+    if (p.status !== 'playing') return;
+    const t = window.setInterval(() => tick((x) => x + 1), 1000);
     return () => clearInterval(t);
-  }, [p.endsAt]);
+  }, [p.status]);
   if (!p.soundId) return null;
   const s = sound(p.soundId);
   const remaining = p.endsAt ? fmtRemaining(p.endsAt - Date.now()) : null;
@@ -27,7 +27,7 @@ export function MiniPlayer({ raised }: { raised: boolean }) {
         <Icon name="sound" className="t-muted" size={18} />
         <span className="grow" style={{ minWidth: 0 }}>
           <span className="ellipsis" style={{ display: 'block', fontWeight: 600 }}>{s.name}</span>
-          <span className="t-foot t-muted ellipsis" style={{ display: 'block' }}>{p.status === 'paused' ? HELP.SOUNDS_PAUSED : remaining ? HELP.SOUNDS_ENDS.replace('{t}', remaining) : HELP.SOUNDS_PLAYING}</span>
+          <span className="t-foot t-muted ellipsis num" style={{ display: 'block' }}>{p.status === 'paused' ? `${HELP.SOUNDS_PAUSED} · ${fmtElapsed(elapsed())}` : `${fmtElapsed(elapsed())}${remaining ? ` · ${HELP.SOUNDS_ENDS.replace('{t}', remaining)}` : ''}`}</span>
         </span>
       </Link>
       <div className="mini-controls">
