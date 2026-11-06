@@ -23,6 +23,7 @@ export const TRACKS: Track[] = [
   { id: 'bajo-la-manta', title: 'Bajo la manta', file: 'bajo-la-manta.mp3', uses: ['sleep'], desc: 'Un colchón grave y cálido que cambia muy despacio; sin melodía ni ritmo.', seconds: 179 },
   { id: 'cuerdas-de-nailon', title: 'Cuerdas de nailon', file: 'cuerdas-de-nailon.mp3', uses: ['write'], desc: 'Guitarra de nailon punteada con un patrón sencillo, contrabajo y escobillas lejanas; regular y cercana.', seconds: 180 },
   { id: 'tarde-de-domingo', title: 'Tarde de domingo', file: 'tarde-de-domingo.mp3', uses: ['calm'], desc: 'Piano solo de fieltro, arpegios lentos y mucho silencio entre frases; cálida, sin dramatismo.', seconds: 199 },
+  { id: 'marea-baja', title: 'Marea baja', file: 'marea-baja.mp3', uses: ['write'], desc: 'Un colchón cálido con un pulso lento y apagado, como un latido; hipnótica y constante.', seconds: 196 },
 ];
 
 export function track(id: string): Track | undefined {
