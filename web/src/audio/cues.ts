@@ -58,6 +58,8 @@ export function canSpeak(): boolean {
 }
 
 let preferredName: string | null = null;
+const KEY_WORKING = 'remanso.voz.funciona';
+const failed = new Set<string>();
 
 /** Voces en español disponibles, las de España primero. */
 export function spanishVoices(): SpeechSynthesisVoice[] {
@@ -69,54 +71,100 @@ export function spanishVoices(): SpeechSynthesisVoice[] {
 /** Elige la voz por nombre (se guarda en las preferencias de meditación). */
 export function setPreferredVoice(name: string | null): void { preferredName = name; }
 
-function spanishVoice(): SpeechSynthesisVoice | null {
+function remembered(): string | null { try { return localStorage.getItem(KEY_WORKING); } catch { return null; } }
+function remember(name: string): void { try { localStorage.setItem(KEY_WORKING, name); } catch { /* nada */ } }
+
+/**
+ * Candidatas por orden: la elegida, la que funcionó la última vez, las locales de España,
+ * el resto en español y, al final, la voz por defecto del sistema (sin fijar ninguna).
+ * Se saltan las que ya fallaron en esta sesión.
+ */
+function candidates(): (SpeechSynthesisVoice | null)[] {
   const es = spanishVoices();
-  if (preferredName) { const p = es.find((v) => v.name === preferredName); if (p) return p; }
-  // En macOS, Chrome lista voces que no están descargadas y las reproduce en silencio: las
-  // «premium» (Mónica, Jorge…) suelen faltar; las voces en línea de Google y las del sistema
-  // más básicas suelen funcionar. Preferimos, por este orden: Google, locales de España, cualquiera.
-  return es.find((v) => /google/i.test(v.name)) ?? es.find((v) => v.lang.toLowerCase() === 'es-es' && v.localService) ?? es[0] ?? null;
+  const out: (SpeechSynthesisVoice | null)[] = [];
+  const push = (v: SpeechSynthesisVoice | null | undefined) => { if (v !== undefined && !out.includes(v) && !(v && failed.has(v.name))) out.push(v); };
+  if (preferredName) push(es.find((v) => v.name === preferredName));
+  const r = remembered(); if (r) push(es.find((v) => v.name === r));
+  for (const v of es.filter((v) => v.localService && !/google/i.test(v.name))) push(v);
+  for (const v of es) push(v);
+  push(null);
+  return out;
+}
+
+/** Nombre de la voz que se usará, para mostrarlo; null si no hay voz en español. */
+export function voiceName(): string | null {
+  const c = candidates()[0];
+  return c ? c.name : (spanishVoices().length ? null : null);
 }
 
 // Chrome deja de hablar si la frase se recoge en el recolector de basura, y a veces se traga
 // una frase dicha justo después de `cancel()`: guardamos la referencia y esperamos un poco.
 let current: SpeechSynthesisUtterance | null = null;
+let seq = 0;
 
-/** Dice un texto corto con voz pausada y algo más baja. Cancela lo que estuviera diciendo. */
-export function speak(text: string, volume = 0.9): void {
-  if (!canSpeak()) return;
-  try {
-    const s = window.speechSynthesis;
-    const wasSpeaking = s.speaking || s.pending;
-    if (wasSpeaking) s.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'es-ES';
-    u.rate = 0.85;
-    u.pitch = 0.95;
-    u.volume = volume;
-    const v = spanishVoice();
-    if (v) u.voice = v;
-    current = u;
-    u.onerror = (e) => console.warn('[voz] error', e.error);
-    u.onend = () => { if (current === u) current = null; };
-    // Chrome (sobre todo en macOS) se queda a veces en un estado en el que «habla» sin que
-    // arranque nada, y afecta a todo el navegador. Un pause() + resume() justo antes lo
-    // desatasca; comprobado: sin ello la frase nunca empieza, con ello suena entera.
-    const go = () => { try { s.pause(); s.resume(); } catch { /* nada */ } s.speak(u); };
-    if (wasSpeaking) window.setTimeout(() => { if (current === u) go(); }, 120);
-    else go();
-  } catch { /* sin voz */ }
+/**
+ * Dice un texto corto con voz pausada. Si la voz elegida no arranca en dos segundos (Chrome
+ * «habla» en silencio con voces que el sistema lista pero no tiene, y una frase así colgada
+ * bloquea la cola de todo el navegador), se cancela y se prueba la siguiente candidata.
+ * Resuelve con el nombre de la voz que sonó, o null si ninguna.
+ */
+export async function speak(text: string, volume = 0.9): Promise<string | null> {
+  if (!canSpeak()) return null;
+  const s = window.speechSynthesis;
+  const mine = ++seq;
+  for (const voice of candidates()) {
+    if (mine !== seq) return null; // otra frase ha tomado el relevo
+    const ok = await tryOnce(s, text, voice, volume);
+    if (ok === 'started') { const name = voice ? voice.name : 'sistema'; remember(name); return name; }
+    if (ok === 'interrupted') return null;
+    if (voice) { failed.add(voice.name); console.warn('[voz] no arranca, se descarta:', voice.name); }
+  }
+  return null;
 }
 
-/** Nombre de la voz que se usará, para mostrarlo; null si no hay voz en español. */
-export function voiceName(): string | null {
-  if (!canSpeak()) return null;
-  const v = spanishVoice();
-  return v ? v.name : null;
+/**
+ * Un intento con una voz. Comprobado en Chrome/macOS: tras `cancel()` hay que esperar
+ * ~medio segundo antes de `speak()`, y nunca llamar a `pause()`/`resume()`: eso es lo que
+ * dejaba el motor «hablando» sin arrancar. Con esa espera, todas las voces arrancan en ms.
+ */
+function tryOnce(s: SpeechSynthesis, text: string, voice: SpeechSynthesisVoice | null, volume: number): Promise<'started' | 'hung' | 'interrupted'> {
+  return new Promise((resolve) => {
+    try {
+      let wait = 0;
+      if (s.speaking || s.pending) { s.cancel(); wait = 500; }
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = voice?.lang ?? 'es-ES';
+      if (voice) u.voice = voice;
+      u.rate = 0.85;
+      u.pitch = 0.95;
+      u.volume = volume;
+      current = u;
+      let done = false;
+      let watchdog = 0;
+      u.onstart = () => { if (!done) { done = true; clearTimeout(watchdog); resolve('started'); } };
+      u.onerror = (e) => { if (!done) { done = true; clearTimeout(watchdog); resolve(e.error === 'interrupted' || e.error === 'canceled' ? 'interrupted' : 'hung'); } };
+      u.onend = () => { if (current === u) current = null; };
+      window.setTimeout(() => {
+        if (current !== u) { resolve('interrupted'); return; }
+        watchdog = window.setTimeout(() => { if (!done) { done = true; try { s.cancel(); } catch { /* nada */ } resolve('hung'); } }, 4000);
+        s.speak(u);
+      }, wait);
+    } catch { resolve('hung'); }
+  });
+}
+
+/**
+ * iOS Safari sólo permite hablar si la primera frase nace de un gesto: se llama desde el
+ * botón «Empezar» con una frase vacía, y a partir de ahí las indicaciones programadas suenan.
+ */
+export function unlockSpeech(): void {
+  if (!canSpeak()) return;
+  try { const u = new SpeechSynthesisUtterance(''); u.volume = 0; window.speechSynthesis.speak(u); } catch { /* nada */ }
 }
 
 export function hush(): void {
   current = null;
+  seq++;
   if (canSpeak()) { try { window.speechSynthesis.cancel(); } catch { /* nada */ } }
 }
 

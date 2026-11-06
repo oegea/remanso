@@ -16,7 +16,7 @@ import { Sheet, Confirm } from '../ui/Sheet';
 import { Breath } from '../ui/Breath';
 import { TextEditor } from '../ui/Editor';
 import { announce } from '../ui/Live';
-import { canSpeak, canVibrate, gong, hush, keepAwake, setPreferredVoice, spanishVoices, speak, vibrate, voiceName } from '../audio/cues';
+import { canSpeak, canVibrate, gong, hush, keepAwake, setPreferredVoice, spanishVoices, speak, unlockSpeech, vibrate, voiceName } from '../audio/cues';
 import { player } from '../audio/player';
 import { SOUNDS, type SoundId } from '../audio/catalog';
 import { TRACKS, track } from '../audio/tracks';
@@ -55,6 +55,7 @@ export function Meditate() {
   const totals = useMemo(() => med.totals(db), [db, dataVersion]);
   const t = today();
   const begin = () => {
+    if (prefs.voice) unlockSpeech();
     pending = { plan: med.makePlan(prefs.minutes), prefs };
     navigate('/meditar/sesion');
   };
@@ -75,11 +76,12 @@ export function Meditate() {
               <div className="list-item" style={{ flexWrap: 'wrap', gap: 8 }}>
                 <span className="grow" style={{ flexBasis: '100%' }}><span>{HELP.MED_VOICE_PICK}</span><span className="meta" style={{ display: 'block' }}>{voices.length ? HELP.MED_VOICE_PICK_HELP : HELP.MED_VOICE_NONE_ES}</span></span>
                 {voices.length > 0 && (
-                  <select className="input" style={{ flex: '1 1 160px', minHeight: 36, padding: '4px 10px' }} aria-label={HELP.MED_VOICE_PICK} value={prefs.voiceName && voices.some((v) => v.name === prefs.voiceName) ? prefs.voiceName : (voiceName() ?? '')} onChange={(e) => setPrefs({ voiceName: e.target.value })}>
+                  <select className="input" style={{ flex: '1 1 160px', minHeight: 36, padding: '4px 10px' }} aria-label={HELP.MED_VOICE_PICK} value={prefs.voiceName && voices.some((v) => v.name === prefs.voiceName) ? prefs.voiceName : ''} onChange={(e) => setPrefs({ voiceName: e.target.value })}>
+                    <option value="">{HELP.MED_VOICE_AUTO}{voiceName() ? ` (${voiceName()})` : ''}</option>
                     {voices.map((v) => <option key={v.name} value={v.name}>{v.name} ({v.lang}{v.localService ? '' : ', en línea'})</option>)}
                   </select>
                 )}
-                <button className="btn btn-secondary" onClick={() => speak(HELP.MED_VOICE_SAMPLE)}><Icon name="play" size={16} /> {HELP.MED_VOICE_TEST}</button>
+                <button className="btn btn-secondary" onClick={() => void speak(HELP.MED_VOICE_SAMPLE).then((name) => { announce(name ? HELP.MED_VOICE_OK.replace('{v}', name) : HELP.MED_VOICE_FAIL); setVoices(spanishVoices()); })}><Icon name="play" size={16} /> {HELP.MED_VOICE_TEST}</button>
               </div>
             )}
             <OptRow label={HELP.MED_VIBRATE} help={canVibrate() ? undefined : HELP.MED_VIBRATE_NA} on={prefs.vibrate && canVibrate()} disabled={!canVibrate()} onChange={(v) => setPrefs({ vibrate: v })} />
