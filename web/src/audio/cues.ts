@@ -157,9 +157,9 @@ function tryOnce(s: SpeechSynthesis, text: string, voice: SpeechSynthesisVoice |
  * iOS Safari sólo permite hablar si la primera frase nace de un gesto: se llama desde el
  * botón «Empezar» con una frase vacía, y a partir de ahí las indicaciones programadas suenan.
  */
-export function unlockSpeech(): void {
+export function unlockSpeech(text = 'Empecemos.'): void {
   if (!canSpeak()) return;
-  try { const u = new SpeechSynthesisUtterance(''); u.volume = 0; window.speechSynthesis.speak(u); } catch { /* nada */ }
+  void speak(text);
 }
 
 export function hush(): void {
