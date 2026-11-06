@@ -269,3 +269,5 @@ a.list-item, a.entry-row { color: var(--ink); }
 .sound-dot { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-sunken); color: var(--ink-2); flex: none; transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
 .sound-dot.is-playing { background: var(--accent-soft); color: var(--accent); }
 .list-item.is-current { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+
+.btn-icon.is-on { color: var(--accent); background: var(--accent-soft); }

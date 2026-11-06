@@ -123,6 +123,16 @@ export const HELP = {
   MINI_NEXT: 'Siguiente sonido',
   MINI_STOP: 'Parar',
   MINI_VOLUME: 'Volumen',
+  MINI_LOOP: 'Repetir esta pista',
+  SOUNDS_TAB_AMBIENT: 'Ambientes',
+  SOUNDS_TAB_MUSIC: 'Música',
+  MUSIC_INTRO: 'Piezas instrumentales compuestas para Remanso, para escribir, calmarte o dormir. Cada una dura unos minutos; con el botón de repetir, la que suene se queda en bucle. Son libres (CC BY 4.0).',
+  MUSIC_EMPTY: 'Todavía no hay pistas. Irán apareciendo aquí.',
+  MUSIC_SAVE: 'Guardar para sin conexión',
+  MUSIC_SAVED: 'Guardada en este dispositivo',
+  MUSIC_UNSAVE: 'Quitar de este dispositivo',
+  MUSIC_SAVE_HELP: 'Las pistas se descargan al reproducirlas. Guardarla la deja en este dispositivo para que suene también sin conexión.',
+  MUSIC_LICENCE: 'Música: Oriol Egea, CC BY 4.0.',
   // Descripciones de las secciones de «Más» (móvil).
   MORE_DESC: {
     '/tareas': 'Lo que quieres hacer, con fecha o sin ella, y los proyectos que las agrupan.',

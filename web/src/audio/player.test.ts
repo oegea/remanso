@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('./engine', () => ({
-  engine: { play: vi.fn(async () => {}), pause: vi.fn(async () => {}), resume: vi.fn(async () => {}), stop: vi.fn(async () => {}), setVolume: vi.fn(), fadeOut: vi.fn() },
+  engine: { play: vi.fn(async () => {}), pause: vi.fn(async () => {}), resume: vi.fn(async () => {}), stop: vi.fn(async () => {}), setVolume: vi.fn(), fadeOut: vi.fn(),
+    playTrack: vi.fn(async () => {}), pauseTrack: vi.fn(async () => {}), resumeTrack: vi.fn(async () => {}), stopTrack: vi.fn(async () => {}), setTrackLoop: vi.fn(), setTrackVolume: vi.fn(), trackPosition: vi.fn(() => ({ position: 12, duration: 180 })), fadeOutTrack: vi.fn(), onTrackEnded: null },
 }));
 
 import { player, elapsed, fmtElapsed } from './player';
@@ -51,6 +52,22 @@ describe('reproductor', () => {
     vi.advanceTimersByTime(3_600_000);
     expect(fmtElapsed(elapsed())).toBe('1:01:05');
     vi.useRealTimers();
+  });
+  it('una pista sustituye al ambiente, informa de su posición y respeta el bucle', async () => {
+    await player.play('pink');
+    const t = { id: 'prueba', title: 'Prueba', file: 'prueba.mp3', uses: ['write' as const], desc: '', seconds: 180 };
+    await player.playTrack(t);
+    expect(player.state).toMatchObject({ trackId: 'prueba', soundId: null, status: 'playing' });
+    expect(engine.stop).toHaveBeenCalled();
+    expect(player.position()).toEqual({ position: 12, duration: 180 });
+    player.setLoop(true);
+    expect(engine.setTrackLoop).toHaveBeenCalledWith(true);
+    await player.pause();
+    expect(engine.pauseTrack).toHaveBeenCalled();
+    await player.stop();
+    expect(engine.stopTrack).toHaveBeenCalled();
+    expect(player.state.trackId).toBeNull();
+    player.setLoop(false);
   });
   it('el volumen se acota entre 0 y 1', () => {
     player.setVolume(1.7); expect(player.state.volume).toBe(1);

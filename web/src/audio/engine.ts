@@ -24,6 +24,78 @@ export class Engine {
   private current: SoundId | null = null;
   private fallbackDirect = false;
   private analyser: AnalyserNode | null = null;
+  private trackEl: HTMLAudioElement | null = null;
+  private trackFade: number | null = null;
+  /** Avisa cuando una pista termina sin bucle. */
+  onTrackEnded: (() => void) | null = null;
+
+  private track(): HTMLAudioElement {
+    if (this.trackEl) return this.trackEl;
+    const el = document.createElement('audio');
+    el.preload = 'auto';
+    el.setAttribute('aria-hidden', 'true');
+    el.style.display = 'none';
+    el.addEventListener('ended', () => { if (!el.loop) this.onTrackEnded?.(); });
+    document.body.appendChild(el);
+    this.trackEl = el;
+    return el;
+  }
+
+  private fadeTrack(to: number, ms: number): Promise<void> {
+    const el = this.track();
+    if (this.trackFade !== null) clearInterval(this.trackFade);
+    const from = el.volume;
+    const steps = Math.max(1, Math.round(ms / 40));
+    let i = 0;
+    return new Promise((resolve) => {
+      this.trackFade = window.setInterval(() => {
+        i++;
+        try { el.volume = from + (to - from) * (i / steps); } catch { /* iOS no deja cambiar el volumen */ }
+        if (i >= steps) { if (this.trackFade !== null) clearInterval(this.trackFade); this.trackFade = null; resolve(); }
+      }, 40);
+    });
+  }
+
+  /** Reproduce una pista (fichero) con fundido de entrada; detiene cualquier ambiente. */
+  async playTrack(url: string, volume: number, loop: boolean): Promise<void> {
+    this.teardown();
+    this.current = null;
+    if (this.ctx && this.ctx.state === 'running') { this.master?.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.05); }
+    const el = this.track();
+    el.loop = loop;
+    el.src = url;
+    try { el.volume = 0; } catch { /* iOS */ }
+    await el.play();
+    await this.fadeTrack(volume, 900);
+  }
+
+  async pauseTrack(): Promise<void> {
+    const el = this.track();
+    await this.fadeTrack(0, 350);
+    el.pause();
+  }
+
+  async resumeTrack(volume: number): Promise<void> {
+    const el = this.track();
+    await el.play();
+    await this.fadeTrack(volume, 500);
+  }
+
+  async stopTrack(): Promise<void> {
+    const el = this.track();
+    if (!el.paused) await this.fadeTrack(0, 350);
+    el.pause();
+    el.removeAttribute('src');
+    el.load();
+  }
+
+  setTrackLoop(loop: boolean): void { this.track().loop = loop; }
+  setTrackVolume(volume: number): void { try { this.track().volume = volume; } catch { /* iOS */ } }
+  trackPosition(): { position: number; duration: number } {
+    const el = this.trackEl;
+    return { position: el?.currentTime ?? 0, duration: el && Number.isFinite(el.duration) ? el.duration : 0 };
+  }
+  fadeOutTrack(seconds: number): void { void this.fadeTrack(0, seconds * 1000); }
 
   /** Nivel actual (RMS y pico) a la salida, para comprobar que cada sonido suena y no satura. */
   level(): { rms: number; peak: number } {
@@ -375,6 +447,7 @@ export class Engine {
   }
 
   async play(id: SoundId, volume: number): Promise<void> {
+    if (this.trackEl && !this.trackEl.paused) await this.stopTrack();
     const ctx = this.ensure();
     if (ctx.state !== 'running') await ctx.resume();
     if (this.el && !this.fallbackDirect && this.el.paused) {

@@ -6,9 +6,15 @@
 import { useSyncExternalStore } from 'react';
 import { engine } from './engine';
 import { nextId, sound, type SoundId, type Use } from './catalog';
+import { nextTrackId, playableUrl, track, type Track } from './tracks';
 
 export interface PlayerState {
+  /** Ambiente sintetizado en marcha, o null. */
   soundId: SoundId | null;
+  /** Pista musical en marcha, o null (nunca a la vez que un ambiente). */
+  trackId: string | null;
+  /** Bucle de la pista actual. */
+  loop: boolean;
   status: 'playing' | 'paused';
   volume: number;
   /** Minutos elegidos para el apagado (0 = sin apagado). */
@@ -29,8 +35,12 @@ function read<T>(key: string, fallback: T, parse: (s: string) => T): T {
 }
 function write(key: string, value: string): void { try { localStorage.setItem(key, value); } catch { /* sin almacenamiento */ } }
 
+const KEY_LOOP = 'remanso.sonidos.bucle';
+
 let state: PlayerState = {
   soundId: null,
+  trackId: null,
+  loop: read(KEY_LOOP, false, (s) => s === '1'),
   status: 'paused',
   volume: read(KEY_VOL, 0.6, (s) => Math.min(1, Math.max(0, Number(s) || 0.6))),
   timerMinutes: 0,
@@ -52,9 +62,10 @@ function set(patch: Partial<PlayerState>): void {
 function mediaSession(): void {
   if (!('mediaSession' in navigator)) return;
   const ms = navigator.mediaSession;
-  if (!state.soundId) { ms.metadata = null; ms.playbackState = 'none'; return; }
-  const s = sound(state.soundId);
-  try { ms.metadata = new MediaMetadata({ title: s.name, artist: 'Remanso', album: 'Sonidos' }); } catch { /* sin soporte */ }
+  const t = state.trackId ? track(state.trackId) : null;
+  if (!state.soundId && !t) { ms.metadata = null; ms.playbackState = 'none'; return; }
+  const title = t ? t.title : sound(state.soundId!).name;
+  try { ms.metadata = new MediaMetadata({ title, artist: t ? 'Oriol Egea · Remanso' : 'Remanso', album: t ? 'Música' : 'Sonidos' }); } catch { /* sin soporte */ }
   ms.playbackState = state.status === 'playing' ? 'playing' : 'paused';
 }
 
@@ -82,7 +93,7 @@ function armTimer(): void {
   if (state.timerMinutes <= 0 || state.status !== 'playing') { set({ endsAt: null }); return; }
   const endsAt = Date.now() + state.timerMinutes * 60_000;
   set({ endsAt });
-  fadeTimer = setTimeout(() => engine.fadeOut(FADE_SECONDS), Math.max(0, state.timerMinutes * 60_000 - FADE_SECONDS * 1000));
+  fadeTimer = setTimeout(() => (state.trackId ? engine.fadeOutTrack(FADE_SECONDS) : engine.fadeOut(FADE_SECONDS)), Math.max(0, state.timerMinutes * 60_000 - FADE_SECONDS * 1000));
   stopTimer = setTimeout(() => void player.stop(), state.timerMinutes * 60_000);
 }
 
@@ -99,41 +110,68 @@ export function fmtElapsed(ms: number): string {
   return `${h ? h + ':' : ''}${mm}:${String(sec).padStart(2, '0')}`;
 }
 
+engine.onTrackEnded = () => { void player.next(); };
+
 export const player = {
   async play(id: SoundId): Promise<void> {
     ensureHandlers();
     await engine.play(id, state.volume);
-    set({ soundId: id, status: 'playing', elapsedBefore: 0, playingSince: Date.now() });
+    set({ soundId: id, trackId: null, status: 'playing', elapsedBefore: 0, playingSince: Date.now() });
+    armTimer();
+  },
+  /** Reproduce una pista musical (desde la caché si está guardada). */
+  async playTrack(t: Track): Promise<void> {
+    ensureHandlers();
+    if (state.soundId) await engine.stop();
+    await engine.playTrack(await playableUrl(t), state.volume, state.loop);
+    set({ trackId: t.id, soundId: null, status: 'playing', elapsedBefore: 0, playingSince: Date.now() });
     armTimer();
   },
   async pause(): Promise<void> {
-    if (!state.soundId || state.status !== 'playing') return;
+    if ((!state.soundId && !state.trackId) || state.status !== 'playing') return;
     set({ status: 'paused', elapsedBefore: elapsed(), playingSince: null });
     clearTimers();
     set({ endsAt: null });
-    await engine.pause();
+    if (state.trackId) await engine.pauseTrack(); else await engine.pause();
   },
   async resume(): Promise<void> {
-    if (!state.soundId || state.status === 'playing') return;
-    await engine.resume(state.volume);
+    if ((!state.soundId && !state.trackId) || state.status === 'playing') return;
+    if (state.trackId) await engine.resumeTrack(state.volume); else await engine.resume(state.volume);
     set({ status: 'playing', playingSince: Date.now() });
     armTimer();
   },
   async toggle(): Promise<void> { return state.status === 'playing' ? player.pause() : player.resume(); },
   async stop(): Promise<void> {
     clearTimers();
-    set({ soundId: null, status: 'paused', endsAt: null, elapsedBefore: 0, playingSince: null });
-    await engine.stop();
+    const wasTrack = !!state.trackId;
+    set({ soundId: null, trackId: null, status: 'paused', endsAt: null, elapsedBefore: 0, playingSince: null });
+    if (wasTrack) await engine.stopTrack(); else await engine.stop();
   },
   async next(): Promise<void> {
+    if (state.trackId) {
+      const n = nextTrackId(state.trackId, state.use);
+      const t = n ? track(n) : undefined;
+      if (t) await player.playTrack(t); else await player.stop();
+      return;
+    }
     if (!state.soundId) return;
     await player.play(nextId(state.soundId, state.use));
+  },
+  setLoop(loop: boolean): void {
+    set({ loop });
+    write(KEY_LOOP, loop ? '1' : '0');
+    engine.setTrackLoop(loop);
+  },
+  /** Posición y duración de la pista en curso (0 si es un ambiente). */
+  position(): { position: number; duration: number } {
+    return state.trackId ? engine.trackPosition() : { position: 0, duration: 0 };
   },
   setVolume(v: number): void {
     const volume = Math.min(1, Math.max(0, v));
     set({ volume });
     write(KEY_VOL, String(volume));
     engine.setVolume(volume);
+    engine.setTrackVolume(volume);
   },
   setTimer(minutes: number): void {
     set({ timerMinutes: minutes });
