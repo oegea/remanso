@@ -244,3 +244,28 @@ a.list-item, a.entry-row { color: var(--ink); }
 .hbars .trk > span { display: block; height: 100%; min-width: 4px; border-radius: 4px; background: var(--accent); transition: width var(--t-slow) var(--ease); }
 .hbars .trk.is-soft > span { background: var(--ink-3); }
 .hbars .val { font-size: var(--fs-foot); color: var(--ink); font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+
+/* Minirreproductor: sólo mientras suena algo. Sobre la barra inferior en móvil; al pie de la barra lateral en escritorio. */
+.miniplayer {
+  position: fixed; left: 0; right: 0; bottom: env(safe-area-inset-bottom); z-index: 7;
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--gutter);
+  background: color-mix(in srgb, var(--bg-raised) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+  animation: fade-in var(--t-fast) var(--ease);
+}
+.miniplayer.is-raised { bottom: calc(64px + env(safe-area-inset-bottom)); }
+.mini-title { display: flex; align-items: center; gap: var(--sp-2); flex: 1 1 auto; min-width: 0; color: var(--ink); }
+.mini-controls { display: flex; align-items: center; gap: 0; flex: none; }
+.mini-volume { width: 72px; accent-color: var(--accent); margin-left: var(--sp-2); }
+@media (max-width: 479.98px) { .mini-volume { display: none; } }
+@media (min-width: 720px) {
+  .miniplayer, .miniplayer.is-raised { left: 0; right: auto; bottom: 0; width: 240px; box-sizing: border-box; flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line); border-right: 1px solid var(--line); }
+  .mini-title { flex-basis: 100%; }
+  .mini-controls { flex-basis: 100%; }
+  .mini-volume { width: 64px; margin-left: auto; }
+  .sidebar { padding-bottom: 120px; }
+}
+.sound-dot { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-sunken); color: var(--ink-2); flex: none; transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+.sound-dot.is-playing { background: var(--accent-soft); color: var(--accent); }
+.list-item.is-current { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }

@@ -27,6 +27,10 @@ dedicado (Acer Aspire One con antiX Linux, consola de 80×24).
   Argon2id, bloqueo por inactividad, copias cifradas, exportación en claro sólo
   explícita. Sin red, sin telemetría, sin IA.
 
+- **Sonidos de fondo** (sólo web): lluvia, olas, viento, arroyo, fuego y ruidos blanco,
+  rosa, marrón y gris, sintetizados por la propia aplicación (sin ficheros ni licencias),
+  con temporizador de apagado. Opcionales; nada suena si no lo pones.
+
 Todo es opt-in: al instalar, Remanso es un cuaderno vacío.
 
 ## Estado

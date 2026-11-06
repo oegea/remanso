@@ -243,6 +243,10 @@ Acerca de (qué es, qué no es, dónde están los datos).
 - **Fila de lista** (`.list-item`): 56 px, separador alineado con el texto; el fondo del
   hover respira 12 px a cada lado sin mover el contenido. En una ficha, la fila
   «etiqueta · valor ›» abre la hoja que cambia ese dato.
+- **Minirreproductor** (`MiniPlayer`): sólo existe mientras hay un sonido elegido. Una
+  línea sobre la barra inferior en móvil (nombre, estado o tiempo hasta el apagado,
+  pausa, siguiente, parar; volumen a partir de 480 px) y un bloque al pie de la barra
+  lateral en escritorio. Parar lo quita. Nunca aparece solo ni suena nada sin un toque.
 - **Baldosa y barras** (`Tile`, `HBars`): cifra grande con pie, y barras horizontales en un
   solo tono (`--accent`; gris `--ink-3` para la referencia pasada) con etiqueta y valor en
   texto. Nunca colores de fallo ni porcentajes de éxito.

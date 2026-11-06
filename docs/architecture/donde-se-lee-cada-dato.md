@@ -30,3 +30,4 @@ defecto. Las pantallas se nombran como en la barra de navegación.
 | Copia de seguridad / exportación | Archivo descargado | Incluye todo lo anterior |
 
 Pendiente de revisar en la versión de terminal (el usuario pidió centrarse en la web).
+| Sonidos: volumen y uso elegido (escribir, calmarse, dormir) | Sonidos y minirreproductor (sólo en este dispositivo, `localStorage`; no son datos personales) | No entran en copias ni exportación |

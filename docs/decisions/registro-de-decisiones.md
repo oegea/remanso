@@ -180,9 +180,39 @@ la evidencia manda.
 - **Decisión.** La devolución del foco se difiere con `setTimeout(…, 0)`.
 - **Dónde.** `web/src/ui/Sheet.tsx`.
 
+## ADR-016 · Sonidos de fondo sintetizados, opcionales y sin promesas (2026-11-06)
+
+- **Contexto.** Poder poner lluvia, ruido continuo o un ambiente mientras se escribe, para
+  calmarse o para dormir. Debe ser invisible para quien no lo use, funcionar sin conexión
+  y no cargar el repositorio con audio ni licencias.
+- **Decisión.** Sección «Sonidos» (en Más) con once ambientes que la propia aplicación
+  sintetiza con Web Audio: ruidos blanco, rosa, marrón y gris; lluvia suave, intensa y
+  tormenta lejana; olas, viento, arroyo y fuego. Capas de ruido filtrado en bucle sin
+  costura, vaivenes lentos y ráfagas programadas con semilla fija: cero bytes, sin
+  repetición audible, sin licencias. Filtro por uso (escribir, calmarse, dormir),
+  temporizador de apagado con fundido (30, 60, 90 min) y minirreproductor que sólo existe
+  mientras hay un sonido elegido (pausa, siguiente, parar, volumen), sobre la barra
+  inferior en móvil y al pie de la barra lateral en escritorio. Controles del sistema por
+  Media Session; sigue sonando con la aplicación bloqueada. Nada suena sin un gesto; sin
+  recomendaciones ni inferencia de estado de ánimo. Pistas musicales (fase posterior) irán
+  bajo demanda y con licencia propia, nunca dentro de la AGPL.
+- **Evidencia.** Calmarse: música lenta y sonidos de naturaleza reducen ansiedad y
+  activación (de Witte et al., 2020; Buxton et al., 2021). Dormir: el ruido continuo ayuda
+  a conciliar el sueño en entornos ruidosos; ruido rosa con estudios pequeños favorables.
+  Escribir o concentrarse: la música de fondo no mejora leer ni escribir aunque sí el
+  ánimo (Kämpfe et al., 2011). Por eso la interfaz habla de «ambiente», no de técnica, y
+  no afirma mejoras de concentración. Límite declarado: en iOS una web instalada deja de
+  sonar con la pantalla apagada.
+- **Dónde.** `web/src/audio/` (`synth.ts` generadores puros con pruebas, `catalog.ts`,
+  `engine.ts`, `player.ts`), `web/src/screens/Sounds.tsx`, `web/src/ui/MiniPlayer.tsx`.
+
 ## Pendientes
 
 - Temporizador opcional de veinte minutos en el episodio de impulso («decido cuando
   acabe»). Evidencia aún por revisar: la espera sola tiene evidencia baja y el craving
   puede durar más de treinta minutos (nota B); encajaría como variante de la espera activa.
 - Paridad de la versión de terminal con los cambios de la web.
+- Sonidos, fase 2: pistas musicales instrumentales (CC0 verificadas y propias) servidas bajo
+  demanda con «guardar para sin conexión», licencia propia en carpeta aparte.
+- Sección de meditación (idea en estudio); hasta entonces los sonidos no se enlazan desde
+  la respiración guiada.

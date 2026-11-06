@@ -338,6 +338,16 @@ test.describe.serial('recorrido completo', () => {
     await go(page, 'Revisión'); await page.getByRole('button', { name: /Episodios y patrón de impulsos/ }).click(); await expect(page.getByRole('heading', { name: /Patrón de episodios/ })).toBeVisible(); await shot('19c-episodios');
     await page.getByRole('listitem').first().click(); await shot('19d-episodio');
     await page.keyboard.press('Escape');
+    // Sonidos: tocar uno lo pone a sonar y aparece el minirreproductor; parar lo quita.
+    await go(page, 'Sonidos'); await shot('19e-sonidos');
+    await page.getByRole('button', { name: /^Lluvia suave/ }).click();
+    await expect(page.getByRole('region', { name: 'Suena ahora' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Suena ahora' }).getByText('Lluvia suave')).toBeVisible();
+    await shot('19f-sonando');
+    await page.getByRole('button', { name: 'Pausar' }).click();
+    await expect(page.getByRole('button', { name: 'Reanudar' })).toBeVisible();
+    await page.getByRole('button', { name: 'Parar' }).click();
+    await expect(page.getByRole('region', { name: 'Suena ahora' })).toHaveCount(0);
     await go(page, 'Buscar'); await page.getByRole('searchbox').fill('caminar'); await shot('20-buscar');
     await go(page, 'Ajustes'); await shot('21-ajustes');
     await page.getByRole('button', { name: /Técnicas y su evidencia/ }).click(); await shot('22-tecnicas');

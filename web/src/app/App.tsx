@@ -21,6 +21,8 @@ import { GoalList, GoalDetail, MetricView } from '../screens/Goals';
 import { Impulse } from '../screens/Impulse';
 import { ImpulseHistory } from '../screens/ImpulseHistory';
 import { ReviewMenu, ReviewSession } from '../screens/Review';
+import { Sounds } from '../screens/Sounds';
+import { MiniPlayer } from '../ui/MiniPlayer';
 
 export function App() {
   const s = useSession();
@@ -31,7 +33,7 @@ export function App() {
     return <div className="veil"><div className="spinner" aria-label="Cargando" role="status" /></div>;
   }
   if (s.phase === 'first-use') return <><FirstUse /><LiveRegion /></>;
-  if (s.phase === 'locked') return <><Lock /><LiveRegion /></>;
+  if (s.phase === 'locked') return <><Lock /><MiniPlayer raised={false} /><LiveRegion /></>;
   return <Shell />;
 }
 
@@ -73,12 +75,14 @@ function Shell() {
               <Route path="/impulsos" component={ImpulseHistory} />
               <Route path="/buscar" component={Search} />
               <Route path="/mas" component={More} />
+              <Route path="/sonidos" component={Sounds} />
               <Route path="/ajustes" component={Settings} />
               <Route component={Today} />
             </Switch>
         </div>
       </main>
       {!fullscreen && <TabBar />}
+      <MiniPlayer raised={!fullscreen} />
       <LiveRegion />
       {hidden && <div className="veil" aria-hidden="true">Remanso</div>}
     </div>
