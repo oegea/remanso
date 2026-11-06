@@ -271,6 +271,16 @@ la evidencia manda.
   `web/tools/gen_voice.py`, `web/src/domain/meditation.ts` (cada fase y paso lleva el
   identificador de su frase), `web/src/screens/Meditate.tsx`.
 
+## ADR-020 · Las versiones nuevas se avisan y se aplican cuando la persona quiere (2026-11-06)
+
+- **Contexto.** El service worker se registraba en modo «prompt» sin ningún aviso: la
+  versión nueva quedaba esperando y, en un iPhone con la aplicación en la pantalla de
+  inicio, la vieja seguía sirviéndose durante días.
+- **Decisión.** Un aviso fijo abajo («Hay una versión nueva… Luego / Actualizar») que
+  aplica la versión al pulsar, nunca solo: una recarga a mitad de una entrada o de una
+  sesión de meditación sería peor que esperar. Se comprueba si hay versión nueva al volver a
+  la aplicación (visibilidad y foco) y cada hora. `web/src/app/Update.tsx`.
+
 ## Pendientes
 
 - Temporizador opcional de veinte minutos en el episodio de impulso («decido cuando

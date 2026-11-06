@@ -66,6 +66,15 @@
 }
 .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 @media (min-width: 720px) { .toast { bottom: 24px; } }
+/* Aviso de versión nueva: fijo abajo, por encima de barra y minirreproductor; se queda hasta que se decide. */
+.update {
+  position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 31;
+  display: flex; align-items: center; gap: var(--sp-2); width: min(calc(100% - 32px), 520px);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4); background: var(--bg-raised); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: 0 8px 28px rgb(0 0 0 / 0.18); font-size: var(--fs-foot); line-height: 1.4;
+}
+.has-player .update { bottom: calc(76px + var(--player-h) + env(safe-area-inset-bottom)); }
+@media (min-width: 720px) { .update { bottom: 24px; } .has-player .update { bottom: calc(24px + var(--player-h)); } }
 
 /* Marca con olas (bloqueo y presentación): deriva muy lenta y continua, sin costura.
    Las transformaciones CSS sobre <g> usan unidades del viewBox: -12 es un periodo exacto. */

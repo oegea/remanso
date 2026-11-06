@@ -24,6 +24,7 @@ import { ReviewMenu, ReviewSession } from '../screens/Review';
 import { Sounds } from '../screens/Sounds';
 import { Meditate, MeditateSession } from '../screens/Meditate';
 import { MiniPlayer } from '../ui/MiniPlayer';
+import { UpdateBanner } from './Update';
 
 export function App() {
   const s = useSession();
@@ -33,8 +34,8 @@ export function App() {
   if (s.phase === 'loading') {
     return <div className="veil"><div className="spinner" aria-label="Cargando" role="status" /></div>;
   }
-  if (s.phase === 'first-use') return <><FirstUse /><LiveRegion /></>;
-  if (s.phase === 'locked') return <><Lock /><MiniPlayer raised={false} /><LiveRegion /></>;
+  if (s.phase === 'first-use') return <><FirstUse /><UpdateBanner /><LiveRegion /></>;
+  if (s.phase === 'locked') return <><Lock /><MiniPlayer raised={false} /><UpdateBanner /><LiveRegion /></>;
   return <Shell />;
 }
 
@@ -88,6 +89,7 @@ function Shell() {
       </main>
       {!fullscreen && <TabBar />}
       <MiniPlayer raised={!fullscreen} />
+      <UpdateBanner />
       <LiveRegion />
       {hidden && <div className="veil" aria-hidden="true">Remanso</div>}
     </div>

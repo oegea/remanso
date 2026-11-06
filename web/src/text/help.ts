@@ -215,6 +215,10 @@ export const HELP = {
   EVIDENCE_HEAD: 'Estudios en los que se apoya',
   LIMITS_HEAD: 'Límites',
 
+  // Versión nueva
+  UPDATE_READY: 'Hay una versión nueva de Remanso. Se aplicará al actualizar; lo que tengas escrito está guardado.',
+  UPDATE_LATER: 'Luego',
+  UPDATE_NOW: 'Actualizar',
   // Pantalla de desbloqueo
   LOCK_WAIT: 'Demasiados intentos seguidos. Puedes volver a probar en {t}.',
 } as const;
