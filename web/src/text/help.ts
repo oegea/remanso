@@ -126,7 +126,7 @@ export const HELP = {
   MINI_LOOP: 'Repetir esta pista',
   SOUNDS_TAB_AMBIENT: 'Ambientes',
   SOUNDS_TAB_MUSIC: 'Música',
-  MUSIC_INTRO: 'Piezas instrumentales compuestas para Remanso, para escribir, calmarte o dormir. Cada una dura unos minutos; con el botón de repetir, la que suene se queda en bucle. Son libres (CC BY 4.0).',
+  MUSIC_INTRO: 'Piezas instrumentales compuestas para Remanso, para escribir o concentrarte, calmarte, dormir o meditar. Cada una dura unos minutos; con el botón de repetir, la que suene se queda en bucle. Son libres (CC BY 4.0).',
   MUSIC_EMPTY: 'Todavía no hay pistas. Irán apareciendo aquí.',
   MUSIC_SAVE: 'Guardar para sin conexión',
   MUSIC_SAVED: 'Guardada en este dispositivo',

@@ -5,7 +5,7 @@
  * para escribir sólo hay preferencia personal.
  */
 
-export type Use = 'write' | 'calm' | 'sleep';
+export type Use = 'write' | 'calm' | 'sleep' | 'meditate';
 export type Family = 'noise' | 'rain' | 'nature';
 export type SoundId =
   | 'white' | 'pink' | 'brown' | 'grey'
@@ -24,6 +24,7 @@ export const USES: { key: Use; label: string }[] = [
   { key: 'write', label: 'Escribir' },
   { key: 'calm', label: 'Calmarse' },
   { key: 'sleep', label: 'Dormir' },
+  { key: 'meditate', label: 'Meditar' },
 ];
 
 export const FAMILIES: { key: Family; label: string }[] = [
@@ -33,12 +34,12 @@ export const FAMILIES: { key: Family; label: string }[] = [
 ];
 
 export const SOUNDS: Sound[] = [
-  { id: 'rain_soft', name: 'Lluvia suave', desc: 'Gotas finas y un fondo constante, como una tarde de lluvia tras la ventana.', family: 'rain', uses: ['write', 'calm', 'sleep'] },
+  { id: 'rain_soft', name: 'Lluvia suave', desc: 'Gotas finas y un fondo constante, como una tarde de lluvia tras la ventana.', family: 'rain', uses: ['write', 'calm', 'sleep', 'meditate'] },
   { id: 'rain_heavy', name: 'Lluvia intensa', desc: 'Más densa y grave; tapa mejor los ruidos de alrededor.', family: 'rain', uses: ['calm', 'sleep'] },
   { id: 'storm', name: 'Tormenta lejana', desc: 'Lluvia intensa con truenos de vez en cuando, lejos.', family: 'rain', uses: ['sleep', 'calm'] },
-  { id: 'waves', name: 'Olas', desc: 'Olas que llegan y se retiran, cada una un poco distinta.', family: 'nature', uses: ['calm', 'sleep'] },
-  { id: 'wind', name: 'Viento', desc: 'Viento que sube y baja despacio, sin ráfagas bruscas.', family: 'nature', uses: ['calm', 'sleep'] },
-  { id: 'stream', name: 'Arroyo', desc: 'Agua que corre entre piedras, viva pero regular.', family: 'nature', uses: ['write', 'calm'] },
+  { id: 'waves', name: 'Olas', desc: 'Olas que llegan y se retiran, cada una un poco distinta.', family: 'nature', uses: ['calm', 'sleep', 'meditate'] },
+  { id: 'wind', name: 'Viento', desc: 'Viento que sube y baja despacio, sin ráfagas bruscas.', family: 'nature', uses: ['calm', 'sleep', 'meditate'] },
+  { id: 'stream', name: 'Arroyo', desc: 'Agua que corre entre piedras, viva pero regular.', family: 'nature', uses: ['write', 'calm', 'meditate'] },
   { id: 'fire', name: 'Fuego de chimenea', desc: 'Un fondo grave y crepitar de leña, de tarde en tarde.', family: 'nature', uses: ['write', 'calm'] },
   { id: 'brown', name: 'Ruido marrón', desc: 'Grave y redondo, como un avión lejano. El que menos cansa.', family: 'noise', uses: ['write', 'sleep'] },
   { id: 'pink', name: 'Ruido rosa', desc: 'Equilibrado, parecido a una cascada lejana.', family: 'noise', uses: ['write', 'sleep'] },

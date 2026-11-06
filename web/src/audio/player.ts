@@ -47,7 +47,7 @@ let state: PlayerState = {
   endsAt: null,
   elapsedBefore: 0,
   playingSince: null,
-  use: read<Use | null>(KEY_USE, null, (s) => (['write', 'calm', 'sleep'].includes(s) ? (s as Use) : null)),
+  use: read<Use | null>(KEY_USE, null, (s) => (['write', 'calm', 'sleep', 'meditate'].includes(s) ? (s as Use) : null)),
 };
 const listeners = new Set<() => void>();
 let fadeTimer: ReturnType<typeof setTimeout> | null = null;
