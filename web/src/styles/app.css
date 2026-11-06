@@ -254,7 +254,7 @@ a.list-item, a.entry-row { color: var(--ink); }
   border-top: 1px solid var(--line);
   animation: fade-in var(--t-fast) var(--ease);
 }
-.miniplayer.is-raised { bottom: calc(64px + env(safe-area-inset-bottom)); }
+.miniplayer.is-raised { bottom: calc(57px + env(safe-area-inset-bottom)); }
 .mini-title { display: flex; align-items: center; gap: var(--sp-2); flex: 1 1 auto; min-width: 0; color: var(--ink); }
 .mini-controls { display: flex; align-items: center; gap: 0; flex: none; }
 .mini-volume { width: 72px; accent-color: var(--accent); margin-left: var(--sp-2); }

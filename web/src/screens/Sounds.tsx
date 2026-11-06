@@ -39,7 +39,7 @@ export function Sounds() {
                     <button key={s.id} className={`list-item ${current ? 'is-current' : ''}`} aria-pressed={current} onClick={() => (current ? void player.toggle() : void player.play(s.id))}>
                       <span className={`sound-dot ${playing ? 'is-playing' : ''}`} aria-hidden="true"><Icon name={playing ? 'pause' : 'play'} size={16} /></span>
                       <span className="grow"><span style={{ fontWeight: current ? 600 : 400 }}>{s.name}</span><span className="meta" style={{ display: 'block' }}>{s.desc}</span></span>
-                      {current && <span className="t-foot" style={{ color: 'var(--accent)' }}>{playing ? HELP.SOUNDS_PLAYING : HELP.SOUNDS_PAUSED}</span>}
+                      {current && <span className="t-foot" style={{ color: 'var(--accent)', whiteSpace: 'nowrap', flex: 'none' }}>{playing ? HELP.SOUNDS_PLAYING : HELP.SOUNDS_PAUSED}</span>}
                     </button>
                   );
                 })}
