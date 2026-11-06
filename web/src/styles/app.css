@@ -295,3 +295,11 @@ a.list-item, a.entry-row { color: var(--ink); }
 .med-dots .dot.is-current { background: var(--accent); border-color: var(--accent); }
 
 @media (min-width: 720px) { .shell.is-immersive .sidebar { display: none; } }
+
+/* Sesión de meditación con sonido de fondo: los botones suben por encima del reproductor. */
+.has-player .med-foot { padding-bottom: calc(var(--player-h) + var(--sp-6) + env(safe-area-inset-bottom)); }
+@media (min-width: 720px) {
+  /* Sin barra lateral (sesión), el reproductor va a lo ancho, como en móvil. */
+  .shell.is-immersive ~ .miniplayer, .shell.is-immersive .miniplayer { left: 0; right: 0; width: auto; border-right: 0; flex-wrap: nowrap; padding: var(--sp-2) var(--gutter); }
+  .shell.is-immersive .mini-title, .shell.is-immersive .mini-controls { flex-basis: auto; }
+}
