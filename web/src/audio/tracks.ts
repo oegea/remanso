@@ -25,6 +25,7 @@ export const TRACKS: Track[] = [
   { id: 'tarde-de-domingo', title: 'Tarde de domingo', file: 'tarde-de-domingo.mp3', uses: ['calm'], desc: 'Piano solo de fieltro, arpegios lentos y mucho silencio entre frases; cálida, sin dramatismo.', seconds: 199 },
   { id: 'marea-baja', title: 'Marea baja', file: 'marea-baja.mp3', uses: ['write'], desc: 'Un colchón cálido con un pulso lento y apagado, como un latido; hipnótica y constante.', seconds: 196 },
   { id: 'templo', title: 'Templo', file: 'templo.mp3', uses: ['meditate'], desc: 'Dron de tanpura, cuencos de vez en cuando y silencios largos; seca y serena.', seconds: 179 },
+  { id: 'quietud', title: 'Quietud', file: 'quietud.mp3', uses: ['meditate'], desc: 'Un solo dron sostenido con armónicos que se mueven despacio y un gong lejano; casi nada pasa.', seconds: 187 },
 ];
 
 export function track(id: string): Track | undefined {
