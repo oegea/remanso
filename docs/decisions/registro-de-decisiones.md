@@ -233,6 +233,21 @@ la evidencia manda.
 - **Dónde.** `web/src/domain/meditation.ts` (plan y diario, con pruebas), `web/src/audio/cues.ts`
   (gong, vibración, voz, pantalla encendida), `web/src/screens/Meditate.tsx`.
 
+## ADR-018 · Freno a la fuerza bruta en el desbloqueo (2026-11-06)
+
+- **Contexto.** La web guarda el archivo cifrado en el propio navegador y la contraseña
+  sólo se comprueba al derivar la clave. Nada impedía probar contraseñas sin parar desde la
+  pantalla de desbloqueo.
+- **Decisión.** Tras tres fallos seguidos, cada intento siguiente espera el doble (10 s,
+  20 s, 40 s… hasta cinco minutos), con cuenta atrás visible y el botón desactivado. Se
+  guarda en `localStorage` (`remanso.intentos`) para que sobreviva a recargar; acertar lo
+  limpia. Con honestidad: esto frena a quien tiene el dispositivo en la mano; a quien copia
+  el archivo y lo ataca fuera de la aplicación lo frena Argon2id (32 MiB, tres pasadas,
+  entre medio segundo y dos por intento), no este contador. La terminal no lo necesita: el
+  sistema operativo ya protege el acceso al archivo.
+- **Dónde.** `web/src/app/lockout.ts` (con pruebas), `web/src/app/session.ts`,
+  `web/src/screens/Lock.tsx`.
+
 ## Pendientes
 
 - Temporizador opcional de veinte minutos en el episodio de impulso («decido cuando

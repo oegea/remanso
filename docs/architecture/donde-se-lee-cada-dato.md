@@ -31,5 +31,6 @@ defecto. Las pantallas se nombran como en la barra de navegación.
 
 Pendiente de revisar en la versión de terminal (el usuario pidió centrarse en la web).
 | Sonidos: volumen y uso elegido (escribir, calmarse, dormir) | Sonidos y minirreproductor (sólo en este dispositivo, `localStorage`; no son datos personales) | No entran en copias ni exportación |
+| Fallos seguidos al desbloquear (contador y hasta cuándo esperar) | Pantalla de desbloqueo (sólo en este dispositivo, `localStorage`; no son datos personales) | No entran en copias ni exportación |
 | Sesión de meditación (duración, cómo te sentiste, bandera de experiencia desagradable, notas) | Meditar → Tus sesiones (lista y detalle) | Las empezadas y no terminadas se descartan |
 | Preferencias de meditación (duración, voz, vibración, gong, fondo) | Meditar (se recuerdan) | En la base cifrada (`settings`) |

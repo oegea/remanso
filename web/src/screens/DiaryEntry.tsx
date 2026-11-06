@@ -55,14 +55,14 @@ export function DiaryEntry() {
   return (
     <div className="editor-shell">
       <header className="topbar">
-        <div className="content row" style={{ minHeight: 52 }}>
-          <button className="btn btn-text" style={{ marginLeft: -8 }} onClick={close}><Icon name="back" /> Listo</button>
-          <div className="grow" style={{ minWidth: 0 }}>
+        <div className="content editor-top">
+          <button className="btn btn-text editor-back" onClick={close}><Icon name="back" /> Listo</button>
+          <div className="editor-title">
             <input className="title-input is-compact" value={title} placeholder={fmtDateLong(entry.day)} aria-label={HELP.EDITOR_TITLE_LABEL} title={HELP.EDITOR_TITLE_HINT}
               onChange={(e) => { const v = e.target.value; setTitle(v); titleRef.current = v.trim(); schedule(textRef.current); }}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); flush(); (e.target as HTMLInputElement).blur(); } }} />
             <div className="editor-meta">
-              {title && <span>{fmtDateCompact(entry.day, today())}</span>}
+              {title && <><span>{fmtDateCompact(entry.day, today())}</span><span>·</span></>}
               <span>{fmtTime(entry.created_at)}</span>
               <span>·</span>
               <WordCount text={text} />
@@ -70,10 +70,10 @@ export function DiaryEntry() {
               <span aria-live="polite">{saved ? 'Guardado' : 'Guardando…'}</span>
             </div>
           </div>
-          <button className="btn btn-icon" aria-label={reading ? 'Editar' : 'Leer'} aria-pressed={reading} onClick={() => { flush(); setReading(!reading); }}>
-            <Icon name={reading ? 'edit' : 'eye'} />
-          </button>
-          <button className="btn btn-icon" aria-label={HELP.DIARY_OPTIONS} onClick={() => setSheet('options')}><Icon name="more" /></button>
+          <div className="editor-actions">
+            <button className="btn btn-icon" aria-label={reading ? 'Editar' : 'Leer'} aria-pressed={reading} onClick={() => { flush(); setReading(!reading); }}><Icon name={reading ? 'edit' : 'eye'} /></button>
+            <button className="btn btn-icon" aria-label={HELP.DIARY_OPTIONS} onClick={() => setSheet('options')}><Icon name="more" /></button>
+          </div>
         </div>
       </header>
       <div className="editor-body">

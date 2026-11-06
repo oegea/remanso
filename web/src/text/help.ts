@@ -221,4 +221,7 @@ export const HELP = {
   TECHNIQUES_INTRO: 'Cada técnica de Remanso viene de la investigación publicada. Aquí puedes leer qué es, cómo se usa en la aplicación, en qué estudios se apoya y qué límites tiene.',
   EVIDENCE_HEAD: 'Estudios en los que se apoya',
   LIMITS_HEAD: 'Límites',
+
+  // Pantalla de desbloqueo
+  LOCK_WAIT: 'Demasiados intentos seguidos. Puedes volver a probar en {t}.',
 } as const;

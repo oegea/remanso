@@ -104,6 +104,17 @@
 .editor-body .editor-text { min-height: 60dvh; }
 .editor-text::placeholder { color: var(--ink-3); }
 .editor-meta { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; color: var(--ink-2); font-size: var(--fs-foot); }
+/* Cabecera del editor: en móvil la línea de estado (hora, palabras, guardado) va debajo, a todo el ancho; en escritorio, bajo el título. */
+.editor-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "back title actions" "meta meta meta"; align-items: center; column-gap: var(--sp-2); min-height: 52px; }
+.editor-back { grid-area: back; margin-left: -8px; }
+.editor-title { display: contents; }
+.editor-title > .title-input { grid-area: title; min-width: 0; }
+.editor-actions { grid-area: actions; display: flex; gap: var(--sp-1); }
+.editor-top .editor-meta { grid-area: meta; padding: var(--sp-1) 0 var(--sp-2); }
+@media (min-width: 720px) {
+  .editor-top { grid-template-areas: "back title actions" ". meta actions"; }
+  .editor-top .editor-meta { padding: 0 0 var(--sp-1); }
+}
 
 /* Segmentos (pestañas) */
 .segments { display: flex; gap: var(--sp-1); overflow-x: auto; padding: var(--sp-2) 0; scrollbar-width: none; }
@@ -302,4 +313,9 @@ a.list-item, a.entry-row { color: var(--ink); }
   /* Sin barra lateral (sesión), el reproductor va a lo ancho, como en móvil. */
   .shell.is-immersive ~ .miniplayer, .shell.is-immersive .miniplayer { left: 0; right: 0; width: auto; border-right: 0; flex-wrap: nowrap; padding: var(--sp-2) var(--gutter); }
   .shell.is-immersive .mini-title, .shell.is-immersive .mini-controls { flex-basis: auto; }
+}
+
+/* iOS hace zoom al enfocar un campo con letra menor de 16 px; en pantallas táctiles los campos usan 16 px como mínimo. */
+@media (hover: none) and (pointer: coarse) {
+  input, textarea, select, .input, .title-input.is-compact { font-size: max(16px, 1em); }
 }

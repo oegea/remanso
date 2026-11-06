@@ -45,16 +45,18 @@ export function NoteEntry() {
   return (
     <div className="editor-shell">
       <header className="topbar">
-        <div className="content row" style={{ minHeight: 52 }}>
-          <button className="btn btn-text" style={{ marginLeft: -8 }} onClick={close}><Icon name="back" /> Listo</button>
-          <div className="grow" style={{ minWidth: 0 }}>
+        <div className="content editor-top">
+          <button className="btn btn-text editor-back" onClick={close}><Icon name="back" /> Listo</button>
+          <div className="editor-title">
             <input className="title-input is-compact" value={title} placeholder={HELP.NOTE_TITLE_PLACEHOLDER} aria-label={HELP.EDITOR_TITLE_LABEL} title={HELP.EDITOR_TITLE_HINT}
               onChange={(e) => { const v = e.target.value; setTitle(v); titleRef.current = v.trim(); schedule(textRef.current); }}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); flush(); (e.target as HTMLInputElement).blur(); } }} />
             <div className="editor-meta"><WordCount text={text} /><span>·</span><span aria-live="polite">{saved ? 'Guardado' : 'Guardando…'}</span>{note.pinned && <><span>·</span><span>{HELP.NOTE_PINNED}</span></>}{note.archived && <><span>·</span><span>{HELP.NOTE_ARCHIVED}</span></>}</div>
           </div>
-          <button className="btn btn-icon" aria-label={reading ? 'Editar' : 'Leer'} aria-pressed={reading} onClick={() => { flush(); setReading(!reading); }}><Icon name={reading ? 'edit' : 'eye'} /></button>
-          <button className="btn btn-icon" aria-label={HELP.NOTE_OPTIONS} onClick={() => setSheet('options')}><Icon name="more" /></button>
+          <div className="editor-actions">
+            <button className="btn btn-icon" aria-label={reading ? 'Editar' : 'Leer'} aria-pressed={reading} onClick={() => { flush(); setReading(!reading); }}><Icon name={reading ? 'edit' : 'eye'} /></button>
+            <button className="btn btn-icon" aria-label={HELP.NOTE_OPTIONS} onClick={() => setSheet('options')}><Icon name="more" /></button>
+          </div>
         </div>
       </header>
       <div className="editor-body">

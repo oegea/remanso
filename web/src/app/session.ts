@@ -6,6 +6,7 @@
 import { Database } from '../db/sqlite';
 import * as store from '../db/store';
 import { deriveKeyOffThread } from '../crypto/kdf';
+import { clearFailures, lockedUntil, noteFailure, TooManyTries } from './lockout';
 import { newKdfParams, open as openContainer, readHeader, seal, WrongPassword, type KdfParams } from '../crypto/container';
 
 export type Phase = 'loading' | 'first-use' | 'locked' | 'unlocked';
@@ -79,18 +80,21 @@ class Session {
       this.set({ phase: 'first-use' });
       return;
     }
+    const until = lockedUntil();
+    if (until) throw new TooManyTries(until);
     const { params } = readHeader(blob);
     const key = await deriveKeyOffThread(password, params);
     let plain: Uint8Array;
     try {
       ({ plain } = await openContainer(blob, key));
     } catch (e) {
-      if (e instanceof WrongPassword) throw e;
+      if (e instanceof WrongPassword) { noteFailure(); throw e; }
       // Archivo principal ilegible: probar la copia previa.
       const prev = await store.loadPrevBlob();
       if (!prev) throw e;
       ({ plain } = await openContainer(prev, key));
     }
+    clearFailures();
     const db = await Database.fromBytes(plain, () => this.markDirty());
     plain.fill(0);
     this.key = key;
