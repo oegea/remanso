@@ -245,6 +245,17 @@ a.list-item, a.entry-row { color: var(--ink); }
 .hbars .trk.is-soft > span { background: var(--ink-3); }
 .hbars .val { font-size: var(--fs-foot); color: var(--ink); font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
 
+/* Con el reproductor a la vista, el contenido y el botón flotante suben su altura (móvil). */
+:root { --player-h: 64px; }
+.has-player .shell-main { padding-bottom: calc(64px + var(--player-h) + env(safe-area-inset-bottom)); }
+.has-player .editor-shell .editor-body, .has-player .lock { padding-bottom: calc(var(--player-h) + var(--sp-8)); }
+.has-player .fab { bottom: calc(76px + var(--player-h) + env(safe-area-inset-bottom)); }
+@media (min-width: 720px) {
+  .has-player .shell-main { padding-bottom: 0; }
+  .has-player .editor-shell .editor-body { padding-bottom: var(--sp-8); }
+  .has-player .fab { bottom: 32px; }
+}
+
 /* Minirreproductor: sólo mientras suena algo. Sobre la barra inferior en móvil; al pie de la barra lateral en escritorio. */
 .miniplayer {
   position: fixed; left: 0; right: 0; bottom: env(safe-area-inset-bottom); z-index: 7;

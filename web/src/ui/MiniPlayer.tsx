@@ -19,7 +19,13 @@ export function MiniPlayer({ raised }: { raised: boolean }) {
     const t = window.setInterval(() => tick((x) => x + 1), 1000);
     return () => clearInterval(t);
   }, [p.status]);
-  if (!p.soundId && !p.trackId) return null;
+  const visible = !!(p.soundId || p.trackId);
+  // Mientras el reproductor está a la vista, el contenido gana abajo su altura (CSS .has-player).
+  useEffect(() => {
+    document.documentElement.classList.toggle('has-player', visible);
+    return () => document.documentElement.classList.remove('has-player');
+  }, [visible]);
+  if (!visible) return null;
   const t = p.trackId ? track(p.trackId) : null;
   const name = t ? t.title : sound(p.soundId!).name;
   const remaining = p.endsAt ? fmtRemaining(p.endsAt - Date.now()) : null;
