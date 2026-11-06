@@ -9,19 +9,20 @@
  */
 import type { Database } from '../db/sqlite';
 import { rng } from '../audio/synth';
+import { isVoiceName, type VoiceId, type VoiceName } from '../audio/voice';
 
 export type PhaseKind = 'intention' | 'deep_breaths' | 'settle' | 'scan' | 'sounds' | 'breath' | 'closing_breaths' | 'open_eyes';
 
-export interface Step { at: number; text: string; say?: string }
+export interface Step { at: number; text: string; voice?: VoiceId }
 
 export interface Phase {
   kind: PhaseKind;
   title: string;
   seconds: number;
-  /** Instrucción visible y, si la voz está activa, dicha al empezar la fase. */
+  /** Instrucción visible, breve. */
   cue: string;
-  /** Versión corta para la voz (si difiere de `cue`). */
-  say?: string;
+  /** Frase pregrabada que la voz guía dice al empezar la fase (texto completo en voice-lines.json). */
+  voice?: VoiceId;
   /** Pasos intermedios (recorrido del cuerpo, recordatorios), en segundos desde el inicio de la fase. */
   steps: Step[];
   /** Si la fase pide los ojos cerrados. */
@@ -30,22 +31,22 @@ export interface Phase {
 
 export const DURATIONS = [5, 10, 15, 20] as const;
 
-const INTENTIONS = [
-  'Piensa en alguien a quien le deseas que le vaya bien hoy. Quédate un momento con ese deseo.',
-  'Recuerda algo pequeño y bueno de estos días: una conversación, un rato de sol, un plato que te gustó.',
-  'Deséate a ti mismo tranquilidad para este rato, sin exigirte nada.',
-  'Piensa en algo que agradeces hoy, por pequeño que sea, y déjalo estar un momento.',
-  'Desea que las personas con las que te cruzarás hoy estén bien. Sin más.',
-  'Date permiso para no hacer nada útil durante estos minutos.',
+const INTENTIONS: [VoiceId, string][] = [
+  ['intention_1', 'Piensa en alguien a quien le deseas que le vaya bien hoy. Quédate un momento con ese deseo.'],
+  ['intention_2', 'Recuerda algo pequeño y bueno de estos días: una conversación, un rato de sol, un plato que te gustó.'],
+  ['intention_3', 'Deséate a ti mismo tranquilidad para este rato, sin exigirte nada.'],
+  ['intention_4', 'Piensa en algo que agradeces hoy, por pequeño que sea, y déjalo estar un momento.'],
+  ['intention_5', 'Desea que las personas con las que te cruzarás hoy estén bien. Sin más.'],
+  ['intention_6', 'Date permiso para no hacer nada útil durante estos minutos.'],
 ];
 
-const REMINDERS = [
-  'Si notas que la mente se ha ido, no pasa nada. Vuelve a la respiración, con suavidad.',
-  'Los pensamientos vienen y van. No hace falta apartarlos ni seguirlos; míralos pasar.',
-  'No intentes dejar la mente en blanco. Sólo observa, y vuelve al aire.',
-  'Si aparece una sensación, un ruido o una idea, déjala estar y vuelve.',
-  'Cada vez que vuelves es la práctica. Volver no es fallar.',
-  'Relaja la cara, los hombros, las manos. Y sigue con la respiración.',
+const REMINDERS: [VoiceId, string][] = [
+  ['reminder_1', 'Si notas que la mente se ha ido, no pasa nada. Vuelve a la respiración, con suavidad.'],
+  ['reminder_2', 'Los pensamientos vienen y van. No hace falta apartarlos ni seguirlos; míralos pasar.'],
+  ['reminder_3', 'No intentes dejar la mente en blanco. Sólo observa, y vuelve al aire.'],
+  ['reminder_4', 'Si aparece una sensación, un ruido o una idea, déjala estar y vuelve.'],
+  ['reminder_5', 'Cada vez que vuelves es la práctica. Volver no es fallar.'],
+  ['reminder_6', 'Relaja la cara, los hombros, las manos. Y sigue con la respiración.'],
 ];
 
 const SCAN_REGIONS: [string, string][] = [
@@ -74,31 +75,32 @@ export function makePlan(minutes: number, seed = Date.now()): Phase[] {
   const breathKind = pick(r, ['nose', 'belly', 'count'] as const);
 
   const phases: Phase[] = [];
-  phases.push({ kind: 'intention', title: 'Para empezar', seconds: intention, cue: pick(r, INTENTIONS), steps: [], eyesClosed: false });
-  phases.push({ kind: 'deep_breaths', title: 'Tres respiraciones profundas', seconds: deep, cue: 'Sigue el círculo: coge aire despacio cuando crece y suéltalo cuando se encoge. Tres veces.', say: 'Vamos a hacer tres respiraciones profundas. Coge aire despacio por la nariz mientras el círculo crece, y suéltalo sin prisa cuando se encoge. Sólo tres.', steps: [], eyesClosed: false });
+  const intent = pick(r, INTENTIONS);
+  phases.push({ kind: 'intention', title: 'Para empezar', seconds: intention, cue: intent[1], voice: intent[0], steps: [], eyesClosed: false });
+  phases.push({ kind: 'deep_breaths', title: 'Tres respiraciones profundas', seconds: deep, cue: 'Sigue el círculo: coge aire despacio cuando crece y suéltalo cuando se encoge. Tres veces.', voice: 'deep_breaths', steps: [], eyesClosed: false });
   if (bodyKind === 'settle') {
-    phases.push({ kind: 'settle', title: 'Asentarse', seconds: body, cue: 'Cierra los ojos. Respira con normalidad y nota el cuerpo sentado: el peso en el asiento, los pies en el suelo, las manos donde estén.', say: 'Ahora cierra los ojos y respira con normalidad. Durante un rato, sólo vamos a notar el cuerpo sentado: el peso sobre el asiento, los pies en el suelo, las manos donde estén. No hay que cambiar nada ni relajar nada a propósito; sólo sentir lo que ya hay.', steps: [
-      { at: Math.round(body * 0.35), text: 'Los pies en el suelo.', say: 'Lleva la atención a los pies: su peso, el contacto con el suelo.' },
-      { at: Math.round(body * 0.65), text: 'Las manos, donde descansen.', say: 'Y ahora las manos, donde descansen: su temperatura, su peso.' },
+    phases.push({ kind: 'settle', title: 'Asentarse', seconds: body, cue: 'Cierra los ojos. Respira con normalidad y nota el cuerpo sentado: el peso en el asiento, los pies en el suelo, las manos donde estén.', voice: 'settle', steps: [
+      { at: Math.round(body * 0.35), text: 'Los pies en el suelo.', voice: 'settle_feet' },
+      { at: Math.round(body * 0.65), text: 'Las manos, donde descansen.', voice: 'settle_hands' },
     ], eyesClosed: true });
   } else if (bodyKind === 'scan') {
     const n = SCAN_REGIONS.length;
-    phases.push({ kind: 'scan', title: 'Un recorrido por el cuerpo', seconds: body, cue: 'Cierra los ojos y respira con normalidad. Vamos a recorrer el cuerpo despacio, de los pies a la cara, sólo notando lo que hay.', say: 'Cierra los ojos y respira con normalidad. Vamos a hacer un recorrido por el cuerpo: consiste en llevar la atención a una zona cada vez, de los pies a la cara, y notar lo que hay en ella, calor, presión, hormigueo o nada en particular. No se trata de relajarla ni de cambiarla, sólo de notarla. Yo te iré diciendo la zona.', steps: SCAN_REGIONS.map(([, text], i) => ({ at: Math.round((body / n) * i) + (i === 0 ? 8 : 0), text, say: text })), eyesClosed: true });
+    phases.push({ kind: 'scan', title: 'Un recorrido por el cuerpo', seconds: body, cue: 'Cierra los ojos y respira con normalidad. Vamos a recorrer el cuerpo despacio, de los pies a la cara, sólo notando lo que hay.', voice: 'scan', steps: SCAN_REGIONS.map(([, text], i) => ({ at: Math.round((body / n) * i) + (i === 0 ? 10 : 0), text, voice: `scan_${i + 1}` as VoiceId })), eyesClosed: true });
   } else {
-    phases.push({ kind: 'sounds', title: 'Los sonidos', seconds: body, cue: 'Cierra los ojos. Deja que lleguen los sonidos de alrededor, cercanos y lejanos, sin ir a buscarlos ni ponerles nombre.', say: 'Cierra los ojos y respira con normalidad. Durante un rato, deja que lleguen los sonidos de alrededor, los cercanos y los lejanos. No hace falta ir a buscarlos ni ponerles nombre; aparecen, duran un poco y se van, y tú sólo escuchas.', steps: [
-      { at: Math.round(body * 0.5), text: 'Los sonidos aparecen y desaparecen solos.', say: 'Fíjate en que los sonidos aparecen y desaparecen solos, sin que tengas que hacer nada.' },
+    phases.push({ kind: 'sounds', title: 'Los sonidos', seconds: body, cue: 'Cierra los ojos. Deja que lleguen los sonidos de alrededor, cercanos y lejanos, sin ir a buscarlos ni ponerles nombre.', voice: 'sounds', steps: [
+      { at: Math.round(body * 0.5), text: 'Los sonidos aparecen y desaparecen solos.', voice: 'sounds_step' },
     ], eyesClosed: true });
   }
-  const breathCue = breathKind === 'nose'
-    ? ['La respiración', 'Lleva ahora la atención al aire que entra y sale por la nariz. Fresco al entrar, templado al salir. Ese es tu punto de apoyo.', 'Ahora lleva la atención al aire que entra y sale por la nariz: un poco más fresco al entrar, más templado al salir. Esa sensación será tu punto de apoyo: el sitio al que vuelves, con suavidad, cada vez que notes que la mente se ha ido a otra parte. No hace falta respirar de ninguna manera especial.']
+  const breathCue: [string, string, VoiceId] = breathKind === 'nose'
+    ? ['La respiración', 'Lleva ahora la atención al aire que entra y sale por la nariz. Fresco al entrar, templado al salir. Ese es tu punto de apoyo.', 'breath_nose']
     : breathKind === 'belly'
-      ? ['La respiración', 'Lleva ahora la atención al vientre, que sube al coger aire y baja al soltarlo. Sin cambiar el ritmo. Ese es tu punto de apoyo.', 'Ahora lleva la atención al vientre, que sube un poco al coger aire y baja al soltarlo. Ese movimiento será tu punto de apoyo: el sitio al que vuelves, con suavidad, cada vez que notes que la mente se ha ido a otra parte. No cambies el ritmo; sólo acompáñalo.']
-      : ['La respiración', 'Lleva ahora la atención a la respiración y cuenta cada espiración: uno, dos… hasta diez, y vuelve a empezar. Si te pierdes, empieza en uno, sin más.', 'Ahora vamos a contar la respiración: cada vez que sueltes el aire, cuenta en silencio, uno, dos, tres, hasta diez, y vuelve a empezar en uno. Contar es sólo una ayuda para quedarte con la respiración. Si te pierdes o te pasas de diez, no pasa nada: empiezas otra vez en uno.'];
+      ? ['La respiración', 'Lleva ahora la atención al vientre, que sube al coger aire y baja al soltarlo. Sin cambiar el ritmo. Ese es tu punto de apoyo.', 'breath_belly']
+      : ['La respiración', 'Lleva ahora la atención a la respiración y cuenta cada espiración: uno, dos… hasta diez, y vuelve a empezar. Si te pierdes, empieza en uno, sin más.', 'breath_count'];
   const reminders = shuffle(r, REMINDERS).slice(0, Math.max(1, Math.min(4, Math.floor(breath / 75))));
   const every = breath / (reminders.length + 1);
-  phases.push({ kind: 'breath', title: breathCue[0], seconds: breath, cue: breathCue[1], say: breathCue[2], steps: reminders.map((text, i) => ({ at: Math.round(every * (i + 1)), text, say: text })), eyesClosed: true });
-  phases.push({ kind: 'closing_breaths', title: 'Para terminar', seconds: closing, cue: 'Tres respiraciones profundas más, siguiendo el círculo.', say: 'Vamos terminando. Tres respiraciones profundas más, siguiendo el círculo: coge aire cuando crece y suéltalo cuando se encoge.', steps: [], eyesClosed: false });
-  phases.push({ kind: 'open_eyes', title: 'Abre los ojos', seconds: open, cue: 'Abre los ojos despacio. Mira alrededor. Tómate un momento antes de moverte.', say: 'Abre los ojos despacio. Mira alrededor un momento, y tómate unos segundos antes de moverte.', steps: [], eyesClosed: false });
+  phases.push({ kind: 'breath', title: breathCue[0], seconds: breath, cue: breathCue[1], voice: breathCue[2], steps: reminders.map(([id, text], i) => ({ at: Math.round(every * (i + 1)), text, voice: id })), eyesClosed: true });
+  phases.push({ kind: 'closing_breaths', title: 'Para terminar', seconds: closing, cue: 'Tres respiraciones profundas más, siguiendo el círculo.', voice: 'closing', steps: [], eyesClosed: false });
+  phases.push({ kind: 'open_eyes', title: 'Abre los ojos', seconds: open, cue: 'Abre los ojos despacio. Mira alrededor. Tómate un momento antes de moverte.', voice: 'open_eyes', steps: [], eyesClosed: false });
   return phases;
 }
 
@@ -156,13 +158,13 @@ export function totals(db: Database): { sessions: number; minutes: number } {
 
 // ----- Preferencias (en la base cifrada, tabla settings) -----
 
-export interface Prefs { minutes: number; voice: boolean; voiceName: string; vibrate: boolean; gong: boolean; background: string }
-const DEFAULTS: Prefs = { minutes: 10, voice: false, voiceName: '', vibrate: true, gong: true, background: '' };
+export interface Prefs { minutes: number; voice: boolean; voiceName: VoiceName; vibrate: boolean; gong: boolean; background: string }
+const DEFAULTS: Prefs = { minutes: 10, voice: true, voiceName: 'serena', vibrate: true, gong: true, background: '' };
 
 export function prefs(db: Database): Prefs {
   const raw = db.scalar<string>("SELECT value FROM settings WHERE key = 'meditation_prefs'");
   if (!raw) return { ...DEFAULTS };
-  try { return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Prefs>) }; } catch { return { ...DEFAULTS }; }
+  try { const p = { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Prefs>) }; if (!isVoiceName(p.voiceName)) p.voiceName = DEFAULTS.voiceName; return p; } catch { return { ...DEFAULTS }; }
 }
 
 export function setPrefs(db: Database, p: Partial<Prefs>): Prefs {

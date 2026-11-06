@@ -29,6 +29,13 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,wasm,woff2}'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: '/index.html',
+        // Voz guía de Meditar: se guarda frase a frase la primera vez que suena (y toda la voz
+        // al empezar una sesión), sin entrar en la precarga inicial.
+        runtimeCaching: [{
+          urlPattern: ({ url }) => url.pathname.startsWith('/voz/'),
+          handler: 'CacheFirst',
+          options: { cacheName: 'remanso-voz-v1', rangeRequests: true, cacheableResponse: { statuses: [0, 200] }, expiration: { maxEntries: 100 } },
+        }],
       },
     }),
   ],

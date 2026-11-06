@@ -1,7 +1,7 @@
 /**
  * Meditar: pantalla de inicio (qué es, duración, opciones, diario de sesiones) y la sesión
  * guiada a pantalla completa. La sesión es un plan de fases con cambios señalados por gong,
- * vibración y, si se quiere, una voz breve; al terminar se pregunta cómo te sientes y si
+ * vibración y, si se quiere, una voz pregrabada que explica cada parte; al terminar se pregunta cómo te sientes y si
  * hubo algo desagradable (bandera de seguridad, safety.md §2.11).
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -16,7 +16,8 @@ import { Sheet, Confirm } from '../ui/Sheet';
 import { Breath } from '../ui/Breath';
 import { TextEditor } from '../ui/Editor';
 import { announce } from '../ui/Live';
-import { canSpeak, canVibrate, gong, hush, keepAwake, setPreferredVoice, spanishVoices, speak, unlockSpeech, vibrate, voiceName } from '../audio/cues';
+import { canVibrate, gong, keepAwake, vibrate } from '../audio/cues';
+import { VOICES, pauseLine, playLine, queueLine, resumeLine, stopLine, warmVoice } from '../audio/voice';
 import { player } from '../audio/player';
 import { SOUNDS, type SoundId } from '../audio/catalog';
 import { TRACKS, track } from '../audio/tracks';
@@ -41,21 +42,12 @@ export function Meditate() {
   const [open, setOpen] = useState<med.Session | null>(null);
   const [prefs, setPrefsState] = useState(() => med.prefs(db));
   const setPrefs = (p: Partial<med.Prefs>) => setPrefsState(med.setPrefs(db, p));
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => spanishVoices());
-  useEffect(() => {
-    med.discardUnfinished(db);
-    if (!canSpeak()) return;
-    const refresh = () => setVoices(spanishVoices());
-    refresh();
-    window.speechSynthesis.addEventListener('voiceschanged', refresh);
-    return () => window.speechSynthesis.removeEventListener('voiceschanged', refresh);
-  }, [db]);
-  useEffect(() => { setPreferredVoice(prefs.voiceName || null); }, [prefs.voiceName]);
+  useEffect(() => { med.discardUnfinished(db); }, [db]);
   const sessions = useMemo(() => med.list(db), [db, dataVersion]);
   const totals = useMemo(() => med.totals(db), [db, dataVersion]);
   const t = today();
   const begin = () => {
-    if (prefs.voice) unlockSpeech();
+    if (prefs.voice) { void playLine(prefs.voiceName, 'empecemos'); void warmVoice(prefs.voiceName); }
     pending = { plan: med.makePlan(prefs.minutes), prefs };
     navigate('/meditar/sesion');
   };
@@ -71,17 +63,14 @@ export function Meditate() {
           </div>
           <h3 className="t-foot" style={{ fontWeight: 600, marginTop: 8 }}>{HELP.MED_OPTIONS}</h3>
           <div className="list">
-            <OptRow label={HELP.MED_VOICE} help={canSpeak() ? HELP.MED_VOICE_HELP : HELP.MED_VOICE_NA} on={prefs.voice && canSpeak()} disabled={!canSpeak()} onChange={(v) => setPrefs({ voice: v })} />
-            {prefs.voice && canSpeak() && (
-              <div className="list-item" style={{ flexWrap: 'wrap', gap: 8 }}>
-                <span className="grow" style={{ flexBasis: '100%' }}><span>{HELP.MED_VOICE_PICK}</span><span className="meta" style={{ display: 'block' }}>{voices.length ? HELP.MED_VOICE_PICK_HELP : HELP.MED_VOICE_NONE_ES}</span></span>
-                {voices.length > 0 && (
-                  <select className="input" style={{ flex: '1 1 160px', minHeight: 36, padding: '4px 10px' }} aria-label={HELP.MED_VOICE_PICK} value={prefs.voiceName && voices.some((v) => v.name === prefs.voiceName) ? prefs.voiceName : ''} onChange={(e) => setPrefs({ voiceName: e.target.value })}>
-                    <option value="">{HELP.MED_VOICE_AUTO}{voiceName() ? ` (${voiceName()})` : ''}</option>
-                    {voices.map((v) => <option key={v.name} value={v.name}>{v.name} ({v.lang}{v.localService ? '' : ', en línea'})</option>)}
-                  </select>
-                )}
-                <button className="btn btn-secondary" onClick={() => void speak(HELP.MED_VOICE_SAMPLE).then((name) => { announce(name ? HELP.MED_VOICE_OK.replace('{v}', name) : HELP.MED_VOICE_FAIL); setVoices(spanishVoices()); })}><Icon name="play" size={16} /> {HELP.MED_VOICE_TEST}</button>
+            <OptRow label={HELP.MED_VOICE} help={HELP.MED_VOICE_HELP} on={prefs.voice} onChange={(v) => setPrefs({ voice: v })} />
+            {prefs.voice && (
+              <div className="list-item" style={{ alignItems: 'flex-start' }}>
+                <span className="grow"><span>{HELP.MED_VOICE_PICK}</span><span className="meta" style={{ display: 'block' }}>{HELP.MED_VOICE_PICK_HELP}</span></span>
+                <div className="row" style={{ gap: 6, flexShrink: 0 }} role="group" aria-label={HELP.MED_VOICE_PICK}>
+                  {VOICES.map((v) => <button key={v.id} className="chip" aria-pressed={prefs.voiceName === v.id} aria-label={`${v.label}, ${v.desc}`} onClick={() => setPrefs({ voiceName: v.id })}>{v.label}</button>)}
+                  <button className="btn btn-icon" aria-label={HELP.MED_VOICE_TEST} title={HELP.MED_VOICE_TEST} onClick={() => void playLine(prefs.voiceName, 'empecemos')}><Icon name="play" size={18} /></button>
+                </div>
               </div>
             )}
             <OptRow label={HELP.MED_VIBRATE} help={canVibrate() ? undefined : HELP.MED_VIBRATE_NA} on={prefs.vibrate && canVibrate()} disabled={!canVibrate()} onChange={(v) => setPrefs({ vibrate: v })} />
@@ -163,7 +152,6 @@ export function MeditateSession() {
   // Arranque: fila en la base, pantalla encendida, fondo, gong y primera indicación.
   useEffect(() => {
     if (!setup.current) { navigate('/meditar'); return; }
-    setPreferredVoice(prefs.voiceName || null);
     pending = null;
     rowId.current = med.start(db, plan, Math.floor(Date.now() / 1000));
     void keepAwake().then((r) => { release.current = r; });
@@ -171,8 +159,9 @@ export function MeditateSession() {
     else if (prefs.background.startsWith('sound:')) void player.play(prefs.background.slice(6) as SoundId);
     if (prefs.gong) void gong();
     if (prefs.vibrate) vibrate('phase');
-    if (prefs.voice) window.setTimeout(() => speak(plan[0].say ?? plan[0].cue), prefs.gong ? 2500 : 300);
-    return () => { release.current(); hush(); };
+    const first = plan[0].voice;
+    if (prefs.voice && first) window.setTimeout(() => void queueLine(prefs.voiceName, first), prefs.gong ? 2500 : 300);
+    return () => { release.current(); stopLine(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -194,7 +183,7 @@ export function MeditateSession() {
     if (step) {
       setStepText(step.text);
       if (prefs.vibrate) vibrate('step');
-      if (prefs.voice && step.say) speak(step.say);
+      if (prefs.voice && step.voice) void playLine(prefs.voiceName, step.voice);
     }
     if (elapsed >= phase.seconds) {
       if (idx + 1 >= plan.length) { finishRun(); return; }
@@ -202,14 +191,15 @@ export function MeditateSession() {
       setIdx(idx + 1); setElapsed(0); setStepText(null);
       if (prefs.vibrate) vibrate(next.kind === 'closing_breaths' ? 'end' : 'phase');
       if (prefs.gong && next.kind === 'closing_breaths') void gong();
-      if (prefs.voice) window.setTimeout(() => speak(next.say ?? next.cue), prefs.gong && next.kind === 'closing_breaths' ? 2500 : 200);
+      const line = next.voice;
+      if (prefs.voice && line) window.setTimeout(() => void playLine(prefs.voiceName, line), prefs.gong && next.kind === 'closing_breaths' ? 2500 : 200);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elapsed]);
 
   const finishRun = () => {
     setRunning(false);
-    hush();
+    stopLine();
     setStage('form');
     void player.stop();
   };
@@ -219,7 +209,7 @@ export function MeditateSession() {
     finishRun();
   };
   const togglePause = () => {
-    if (running) { hush(); if (prefs.vibrate) vibrate('step'); }
+    if (running) { pauseLine(); if (prefs.vibrate) vibrate('step'); } else resumeLine();
     setRunning(!running);
   };
 

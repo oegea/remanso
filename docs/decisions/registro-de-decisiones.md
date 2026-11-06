@@ -248,6 +248,29 @@ la evidencia manda.
 - **Dónde.** `web/src/app/lockout.ts` (con pruebas), `web/src/app/session.ts`,
   `web/src/screens/Lock.tsx`.
 
+## ADR-019 · Voz guía pregrabada con un modelo abierto, en vez de la voz del sistema (2026-11-06)
+
+- **Contexto.** La voz de la sesión de meditación usaba Web Speech, la síntesis del propio
+  navegador. Resultó poco fiable (Chrome se quedaba «hablando» en silencio, la cola es común
+  a todas las pestañas, iOS exige un gesto, cada dispositivo suena distinto y a menudo mal) y
+  las explicaciones, al depender de una voz robótica, se habían quedado cortas.
+- **Decisión.** Las frases de la sesión son un conjunto cerrado (31: la bienvenida, seis
+  reflexiones, las instrucciones de cada parte, las zonas del recorrido del cuerpo y seis
+  recordatorios), así que se generan una sola vez con un modelo abierto (Qwen3-TTS, Apache
+  2.0, en el ordenador del autor con `web/tools/gen_voice.py`) y se sirven como MP3 desde
+  `public/voz/<voz>/<id>.mp3`, reproducidos con un `<audio>`. Dos voces a elegir, Serena y
+  Ryan. Los textos viven en `src/audio/voice-lines.json`, identificados por nombre, y se
+  escribieron de nuevo para que expliquen cada cosa sin dar nada por sabido (qué es un
+  recorrido del cuerpo, qué es el punto de apoyo, cómo contar, qué hacer cuando la mente se
+  va). El texto en pantalla sigue siendo breve. El service worker guarda cada frase la
+  primera vez que suena y, al empezar una sesión, se piden todas para que funcione sin
+  conexión. Licencia de los archivos: CC BY 4.0, aparte del código (`public/voz/LICENSE.md`).
+- **Lo que se pierde.** La voz ya no sigue el idioma del sistema, y cambiar un texto exige
+  regenerar su archivo (sólo ese: el modelo muestrea, y se repite hasta que convence).
+- **Dónde.** `web/src/audio/voice.ts` (reproducción y caché), `web/src/audio/voice-lines.json`,
+  `web/tools/gen_voice.py`, `web/src/domain/meditation.ts` (cada fase y paso lleva el
+  identificador de su frase), `web/src/screens/Meditate.tsx`.
+
 ## Pendientes
 
 - Temporizador opcional de veinte minutos en el episodio de impulso («decido cuando

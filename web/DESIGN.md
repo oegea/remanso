@@ -246,7 +246,8 @@ Acerca de (qué es, qué no es, dónde están los datos).
 - **Sesión de meditación** (`MeditateSession`): pantalla completa sin barras; una línea
   con la parte actual y puntos de progreso; en el centro, el círculo de respiración o una
   sola frase en serifa; el tiempo restante en `--ink-3`; abajo, Pausar y Terminar. Nada
-  más: la pantalla está pensada para no mirarse.
+  más: la pantalla está pensada para no mirarse. La voz guía dice la versión larga y
+  explicativa de cada frase; en pantalla sólo cabe la corta.
 - **Minirreproductor** (`MiniPlayer`): sólo existe mientras hay un sonido elegido. Una
   línea sobre la barra inferior en móvil (nombre, estado o tiempo hasta el apagado,
   pausa, siguiente, parar; volumen a partir de 480 px) y un bloque al pie de la barra
