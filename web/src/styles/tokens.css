@@ -1,0 +1,91 @@
+/* Remanso · tokens de diseño (web/DESIGN.md §3). Sin fuentes externas. */
+:root {
+  color-scheme: light dark;
+
+  --bg: #f6f3ec;
+  --bg-raised: #ffffff;
+  --bg-sunken: #eeeae1;
+  --ink: #1e2126;
+  --ink-2: #5a5f68;
+  --ink-3: #9a9fa8;
+  --line: #e3ded3;
+  --accent: #2f7f76;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcebe8;
+  --warn: #9a6b1e;
+  --danger: #9b3b3b;
+  --done: #4e7d4a;
+  --veil: rgba(246, 243, 236, 0.72);
+  --shadow-sheet: 0 8px 24px rgba(30, 33, 38, 0.08);
+
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-read: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, "Times New Roman", serif;
+
+  --fs-foot: 0.8125rem;   /* 13 */
+  --fs-body: 0.9375rem;   /* 15 */
+  --fs-lead: 1.0625rem;   /* 17 */
+  --fs-title: 1.375rem;   /* 22 */
+  --fs-date: 1.75rem;     /* 28 */
+  --fs-read: 1.125rem;    /* 18 */
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px;
+  --r-ctl: 10px; --r-card: 14px; --r-sheet: 20px; --r-pill: 9999px;
+  --gutter: 20px;
+  --content-max: 680px;
+  --read-max: 36em;
+  --tap: 44px;
+
+  --t-fast: 160ms; --t-med: 240ms; --t-slow: 320ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (min-width: 720px) {
+  :root { --fs-title: 1.5rem; --fs-date: 2rem; --fs-read: 1.1875rem; --gutter: 32px; }
+}
+
+:root[data-theme="dark"],
+:root:not([data-theme="light"]) {
+  /* El bloque oscuro real se aplica más abajo según preferencia o selección. */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14161a;
+    --bg-raised: #1c1f24;
+    --bg-sunken: #0f1113;
+    --ink: #ece9e2;
+    --ink-2: #a7acb5;
+    --ink-3: #6b707a;
+    --line: #2a2e35;
+    --accent: #6fbbb1;
+    --accent-ink: #0f1113;
+    --accent-soft: #1f3634;
+    --warn: #d9a854;
+    --danger: #d97a7a;
+    --done: #8fb98a;
+    --veil: rgba(20, 22, 26, 0.78);
+    --shadow-sheet: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #14161a;
+  --bg-raised: #1c1f24;
+  --bg-sunken: #0f1113;
+  --ink: #ece9e2;
+  --ink-2: #a7acb5;
+  --ink-3: #6b707a;
+  --line: #2a2e35;
+  --accent: #6fbbb1;
+  --accent-ink: #0f1113;
+  --accent-soft: #1f3634;
+  --warn: #d9a854;
+  --danger: #d97a7a;
+  --done: #8fb98a;
+  --veil: rgba(20, 22, 26, 0.78);
+  --shadow-sheet: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 120ms; --t-med: 120ms; --t-slow: 120ms; }
+}

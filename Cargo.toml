@@ -1,0 +1,46 @@
+[package]
+name = "remanso"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+description = "Diario, cuadernos, objetivos y cambio conductual: personal, offline y cifrado."
+license = "AGPL-3.0-or-later"
+
+[[bin]]
+name = "remanso"
+path = "src/main.rs"
+
+[dependencies]
+# TUI: redibujado diferencial, eventos bloqueantes (sin polling activo).
+ratatui = { version = "0.29", default-features = false, features = ["crossterm"] }
+crossterm = { version = "0.28" }
+# Persistencia cifrada: SQLite + SQLCipher (AES-256-CBC + HMAC-SHA512 por página), FTS5.
+rusqlite = { version = "0.32", features = ["bundled-sqlcipher-vendored-openssl"] }
+# Derivación de clave desde la contraseña maestra.
+argon2 = { version = "0.5", default-features = false, features = ["alloc"] }
+zeroize = { version = "1", features = ["derive"] }
+# Fechas locales (sin dependencias de locale; los nombres en español son propios).
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+# Serialización de preferencias, exportaciones y modelo declarativo de intervenciones.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+unicode-width = "0.2"
+unicode-segmentation = "1"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Ya está en el árbol (crossterm/mio); se usa sólo para prctl/setrlimit.
+libc = "0.2"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = "s"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false
+
+[profile.dev]
+opt-level = 1

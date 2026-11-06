@@ -1,0 +1,329 @@
+{
+  "version": 1,
+  "nota": "Catálogo declarativo de técnicas. Procedencia y límites en docs/research/interventions.md y evidence-matrix.md. Las cifras sólo proceden de fuentes leídas.",
+  "tecnicas": [
+    {
+      "clave": "registro_conducta",
+      "nombre": "Registro de la acción",
+      "experimental": false,
+      "confianza": "Alta",
+      "finalidad": "Anotar si se hizo la acción, en el momento, con un gesto.",
+      "explicacion": "Consiste en anotar, con un solo toque, si hoy hiciste la acción que te propusiste. Parece poca cosa, pero es de lo mejor estudiado: el simple hecho de registrar una conducta hace más probable que se repita. En Remanso es la marca diaria de cada acción, sin rachas ni puntuaciones.",
+      "evidencia": [
+        "Harkin et al., 2016 (d+ = 0,40; registrar la conducta cambia la conducta)",
+        "Michie et al., 2009"
+      ],
+      "limites": "Efecto pequeño-moderado; medido casi siempre en intervenciones acompañadas."
+    },
+    {
+      "clave": "meta_proceso",
+      "nombre": "Meta específica de conducta",
+      "experimental": false,
+      "confianza": "Alta",
+      "finalidad": "Formular la meta como conducta concreta con frecuencia semanal.",
+      "explicacion": "En lugar de un resultado («perder cinco kilos»), la meta se formula como algo que haces y que depende de ti («caminar media hora, tres veces por semana»). Las metas concretas y con frecuencia semanal funcionan mejor que las vagas o las que exigen «todos los días». Es la forma en que Remanso te pide definir las acciones de un objetivo.",
+      "evidencia": [
+        "Locke & Latham, 2002",
+        "Epton et al., 2017 (d = 0,34)"
+      ],
+      "limites": "Metas difíciles sólo ayudan si se creen alcanzables; nunca «todos los días» por defecto."
+    },
+    {
+      "clave": "senal_contexto",
+      "nombre": "Señal de contexto",
+      "experimental": false,
+      "confianza": "Alta",
+      "finalidad": "Asociar la acción a un momento, lugar o acción previa estable.",
+      "explicacion": "Un hábito se forma cuando una acción va siempre detrás de la misma señal: un momento, un lugar o algo que ya haces («después de desayunar»). Al repetirla ahí, la acción acaba saliendo sola. Tarda semanas o meses y varía mucho de una persona a otra; saltarse un día no lo deshace. Por eso cada acción en Remanso puede llevar su señal.",
+      "evidencia": [
+        "Lally et al., 2010",
+        "Wood & Neal, 2016",
+        "Gardner et al., 2012"
+      ],
+      "limites": "La automatización tarda semanas o meses y varía mucho; saltarse un día no la deshace."
+    },
+    {
+      "clave": "plan_si_entonces",
+      "nombre": "Plan si–entonces",
+      "experimental": false,
+      "confianza": "Alta",
+      "finalidad": "Delegar el inicio de una conducta a una señal concreta.",
+      "explicacion": "Un plan si–entonces es una frase del tipo «Si [situación concreta], entonces [acción concreta]»: «Si llego a casa a las 19:00, entonces me pongo las zapatillas». Decidir de antemano cuándo y dónde harás algo deja el arranque en manos de la situación, no de las ganas del momento. Es una de las técnicas con más apoyo en la investigación. Funciona mal si la situación es vaga («cuando pueda»). En Remanso se escriben en la pestaña Planes de cada objetivo, y a los 7 y 14 días se te pregunta si sirvió.",
+      "evidencia": [
+        "Gollwitzer & Sheeran, 2006 (d = 0,65)",
+        "Sheeran, Listrom & Gollwitzer, 2025",
+        "Milkman et al., 2011 (fecha y hora)"
+      ],
+      "limites": "Falla si la situación es vaga («cuando pueda»); no comprueba cumplimiento."
+    },
+    {
+      "clave": "automaticidad_srbai",
+      "nombre": "Comprobación de automaticidad (SRBAI)",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Medir si una acción se vuelve hábito sin contar días seguidos.",
+      "explicacion": "Cuatro preguntas breves para saber si una acción empieza a salir sola, sin tener que pensarla. Es una medida, no un diploma: Remanso nunca declara que algo «ya es un hábito». Se responde desde Revisión cuando quieras compararla con la vez anterior.",
+      "evidencia": [
+        "Gardner et al., 2012 (4 ítems, α ≥ 0,80)"
+      ],
+      "limites": "Es una medida, no un umbral: la app no declara «ya es un hábito»."
+    },
+    {
+      "clave": "revision_semanal",
+      "nombre": "Revisión semanal",
+      "experimental": true,
+      "confianza": "Media",
+      "finalidad": "Mirar la semana frente a la anterior y decidir un cambio pequeño.",
+      "explicacion": "Una vez por semana, mirar lo que pasó frente a la semana anterior y decidir un cambio pequeño. Comparar con tu propio pasado funciona tan bien como comparar con la meta, y no hace falta más. No hay ensayos sobre revisiones semanales de metas personales, así que la marcamos como experimental.",
+      "evidencia": [
+        "Harkin et al., 2016 (comparar con el propio pasado)",
+        "Wrosch, Scheier & Miller, 2013"
+      ],
+      "limites": "Sin ensayos de revisión semanal de metas personales: experimental."
+    },
+    {
+      "clave": "nuevo_comienzo",
+      "nombre": "Reanudar tras una ausencia",
+      "experimental": true,
+      "confianza": "Media",
+      "finalidad": "Volver sin reproche; anclar a un hito temporal sólo tras ≥ 14 días.",
+      "explicacion": "Tras unos días sin abrir la aplicación, Remanso te enseña lo pendiente sin reproches y te deja retomar, replanificar o cerrar. Algunos estudios sugieren que las fechas señaladas (un lunes, un mes nuevo) ayudan a empezar de nuevo, pero la evidencia es débil y un «reinicio» puede perjudicar a quien iba bien; por eso sólo se sugiere tras una ausencia larga.",
+      "evidencia": [
+        "Dai, Milkman & Riis, 2014 (correlacional)",
+        "Silverman & Barasch, 2023"
+      ],
+      "limites": "Evidencia correlacional; un «reinicio» perjudica tras buen rendimiento."
+    },
+    {
+      "clave": "revision_objetivo",
+      "nombre": "Revisión de objetivo",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Mantener, ajustar, pausar o cerrar sin juicios.",
+      "explicacion": "Cada cierto tiempo, decidir si un objetivo se mantiene, se ajusta, se pausa o se cierra. Dejar una meta que ya no encaja no es rendirse: hay evidencia de que desengancharse a tiempo cuida el bienestar. Remanso ofrece la revisión; la decisión es siempre tuya.",
+      "evidencia": [
+        "Kwasnicka et al., 2016",
+        "Wrosch et al., 2003"
+      ],
+      "limites": "No aconseja abandonar; cerrar es decisión de la persona."
+    },
+    {
+      "clave": "entorno_checklist",
+      "nombre": "Cambios en el entorno",
+      "experimental": false,
+      "confianza": "Alta",
+      "finalidad": "Cambiar la situación antes supera a resistir en el momento.",
+      "explicacion": "Cambiar la situación antes de que aparezca el impulso (dejar el móvil en otra habitación, no tener en casa lo que no quieres tomar) funciona mejor que resistir en el momento. En la preparación del módulo de impulso puedes anotar qué cambios has hecho en tu entorno, y Remanso te los recuerda al revisar el patrón.",
+      "evidencia": [
+        "Duckworth, Gendler & Gross, 2016",
+        "Carter & Tiffany, 1999 (reactividad a señales, d = 0,92)"
+      ],
+      "limites": "Depende de lo que la persona pueda cambiar en su entorno."
+    },
+    {
+      "clave": "pausa_stop",
+      "nombre": "Pausa STOP",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Romper el automatismo en los primeros segundos de un impulso.",
+      "explicacion": "Cuatro pasos para los primeros segundos de un impulso: parar, dar un paso atrás, notar qué sientes y dónde, y sólo después decidir. Viene de las habilidades de la terapia dialéctico-conductual; como autoayuda aislada hay apoyo preliminar, no ensayos. Es el primer paso de cada episodio en Remanso.",
+      "evidencia": [
+        "Valentine et al., 2015 (revisión; apoyo preliminar)",
+        "Linehan et al., 2015"
+      ],
+      "limites": "Sin ensayos como autoayuda aislada.",
+      "pasos": [
+        "Para.",
+        "Un paso atrás.",
+        "¿Qué notas, dónde lo notas?",
+        "Luego decides."
+      ]
+    },
+    {
+      "clave": "surfear_impulso",
+      "nombre": "Surfear el impulso",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Observar el impulso sin actuar ni suprimir.",
+      "explicacion": "Observar el impulso como si fuera una ola, sin obedecerlo y sin intentar apartarlo: dónde lo notas, qué forma tiene, cómo sube y baja. En un ensayo, quienes lo practicaron consumieron menos aunque la urgencia no bajara. Eso es lo importante: no se trata de que desaparezca, sino de no actuar en automático.",
+      "evidencia": [
+        "Bowen & Marlatt, 2009 (ECA N = 123: menos consumo sin que bajara la urgencia)",
+        "Tapper, 2018"
+      ],
+      "limites": "Puede que la intensidad no baje; prácticas breves (eventos adversos en meditación larga, Farias et al., 2020).",
+      "pasos": [
+        "Nota el impulso. No tienes que hacer nada con él.",
+        "¿Dónde lo notas en el cuerpo? ¿Qué forma tiene: presión, calor, inquietud?",
+        "Respira y míralo como una ola: puede subir y bajar. Tu tarea es mirarlo, no obedecerlo.",
+        "Puede que no baje. Lo que entrenas es no actuar en automático."
+      ]
+    },
+    {
+      "clave": "respiracion_lenta",
+      "nombre": "Respiración lenta",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Reducir la activación fisiológica unos minutos.",
+      "explicacion": "Respirar más despacio de lo habitual, unos cuatro segundos al inspirar y seis al espirar, durante tres a cinco minutos. Reduce la activación del cuerpo de forma medible; lo que no está demostrado es que cambie una conducta por sí sola. En Remanso un círculo te marca el ritmo. Si te mareas, vuelve a respirar normal.",
+      "evidencia": [
+        "Laborde et al., 2022 (metaanálisis k = 223 sobre respiración lenta)"
+      ],
+      "limites": "Efecto fisiológico; sin ensayos conductuales de autoayuda.",
+      "pasos": [
+        "Cuatro segundos dentro, seis fuera.",
+        "Repite durante tres a cinco minutos, sin forzar.",
+        "Si te mareas, respira normal."
+      ]
+    },
+    {
+      "clave": "distraccion_concreta",
+      "nombre": "Cambiar de sitio o hacer otra cosa",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Salir de la situación con una alternativa elegida de antemano.",
+      "explicacion": "Salir de la situación y hacer otra cosa elegida de antemano: lavarte la cara, salir al balcón, llamar a alguien. Funciona mucho mejor si la alternativa está decidida antes de que llegue el impulso; por eso se prepara con calma y después se ofrece como una vía.",
+      "evidencia": [
+        "Duckworth, Gendler & Gross, 2016 (modificación de la situación)"
+      ],
+      "limites": "Funciona mejor con alternativas concretas preparadas antes."
+    },
+    {
+      "clave": "espera_activa",
+      "nombre": "Espera activa con reevaluación e imagen futura",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Poner tiempo con contenido entre el impulso y la acción.",
+      "explicacion": "Poner tiempo entre el impulso y la acción, pero con contenido: pensar en cómo estarás dentro de una hora o la semana que viene, o buscar otra lectura de lo que pasa. Pensar en las consecuencias e imaginar el futuro reducen el deseo en los estudios. No hay un tiempo óptimo; diez minutos es una convención, y el deseo puede no bajar.",
+      "evidencia": [
+        "Kober et al., 2010 (pensar en consecuencias reduce el craving)",
+        "Colton et al., 2024 (g = 0,55 imaginar el futuro)",
+        "Lundahl & Greenwald, 2016 (el deseo sigue alto a los 30 min)"
+      ],
+      "limites": "No hay cifra óptima de espera; 10 min es una convención práctica; el deseo puede no bajar.",
+      "pasos": [
+        "Si lo hago ahora, ¿cómo estaré dentro de una hora? ¿Y la semana que viene?",
+        "¿Qué otra lectura hay de lo que está pasando?"
+      ]
+    },
+    {
+      "clave": "respuesta_competidora",
+      "nombre": "Respuesta competidora",
+      "experimental": false,
+      "confianza": "Alta",
+      "finalidad": "Sustituir un hábito motor por un gesto incompatible.",
+      "explicacion": "Para hábitos del cuerpo (morderse las uñas, tocarse la piel o el pelo): sustituir el gesto por otro incompatible, como cerrar el puño o apretar las manos durante unos segundos. Tiene buen apoyo para ese tipo de hábitos; no sirve para conductas más complejas.",
+      "evidencia": [
+        "Bate et al., 2011 (d = 0,80)",
+        "Moritz et al., 2023 (N = 334, d ≈ 0,5)"
+      ],
+      "limites": "Para hábitos motores (uñas, piel, pelo); no para conductas complejas."
+    },
+    {
+      "clave": "pantalla_desliz",
+      "nombre": "Después de un desliz",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Registrar sin culpa y extraer una señal para la próxima vez.",
+      "explicacion": "Lo que aparece cuando marcas que sí hiciste lo que querías evitar. Un desliz es un dato: qué había antes, qué puedes hacer distinto la próxima vez y, si notas culpa, una frase para soltarla. La culpa no ayuda a retomar; mirar lo que pasó, sí.",
+      "evidencia": [
+        "Witkiewitz & Marlatt, 2004",
+        "Sirois, Kitner & Hirsch, 2015",
+        "Silverman & Barasch, 2023"
+      ],
+      "limites": "La autocompasión tiene evidencia correlacional; la redacción sí está bien fundamentada."
+    },
+    {
+      "clave": "cierre_del_dia",
+      "nombre": "Cierre del día",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Hechos del día, una cosa que funcionó y pendientes por escrito.",
+      "explicacion": "Unas preguntas al terminar el día: qué pasó, qué funcionó y qué queda pendiente, por escrito. Dejar lo pendiente anotado ayudó a dormirse antes en un ensayo pequeño. Se activa en Ajustes y se responde desde Revisión, sin obligación de contestar a todo.",
+      "evidencia": [
+        "Scullin et al., 2018 (lista de pendientes: latencia de sueño 15,8 vs 25,1 min, d = 0,63)",
+        "Seligman et al., 2005"
+      ],
+      "limites": "Un solo ensayo pequeño para el efecto en el sueño."
+    },
+    {
+      "clave": "apertura_del_dia",
+      "nombre": "Apertura del día",
+      "experimental": true,
+      "confianza": "Baja",
+      "finalidad": "Elegir una prioridad y anticipar un obstáculo.",
+      "explicacion": "Al empezar el día, elegir una prioridad y anticipar un obstáculo. Se apoya en la lógica de los planes si–entonces, pero no hay ensayos directos sobre «intenciones matutinas»; por eso es experimental.",
+      "evidencia": [
+        "Gollwitzer & Sheeran, 2006 (por el componente si–entonces)"
+      ],
+      "limites": "Sin ensayos directos de «intenciones matutinas»."
+    },
+    {
+      "clave": "tres_cosas_buenas",
+      "nombre": "Una cosa que fue bien",
+      "experimental": false,
+      "confianza": "Baja",
+      "finalidad": "Describir algo que fue bien y qué lo hizo posible.",
+      "explicacion": "Describir algo que fue bien y qué lo hizo posible. Los efectos son pequeños, y la clave está en describir, no en analizar. Forma parte del cierre del día.",
+      "evidencia": [
+        "Seligman et al., 2005",
+        "Cregg & Cheavens, 2021 (efectos pequeños)"
+      ],
+      "limites": "Efectos pequeños; describir, no analizar (Lyubomirsky et al., 2006)."
+    },
+    {
+      "clave": "escritura_expresiva",
+      "nombre": "Escritura sobre algo difícil",
+      "experimental": true,
+      "confianza": "Baja",
+      "finalidad": "Escribir 15–20 minutos sobre algo que pesa, tres o cuatro veces.",
+      "explicacion": "Escribir 15 o 20 minutos, tres o cuatro veces, sobre algo que pesa. A largo plazo puede ayudar; justo después suele aumentar el malestar. No es para traumas graves sin acompañamiento. En Remanso es un tipo de entrada del diario que eliges tú.",
+      "evidencia": [
+        "Smyth, 1998 (d = 0,47; malestar inmediato d = 0,84)",
+        "Frattaroli, 2006 (r = 0,075)"
+      ],
+      "limites": "Puede aumentar el malestar a corto plazo; no para traumas sin acompañamiento."
+    },
+    {
+      "clave": "revision_aplazamientos",
+      "nombre": "Tarea aplazada varias veces",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Revisar sin culpa qué hace difícil una tarea.",
+      "explicacion": "Cuando una tarea se ha aplazado tres veces, Remanso ofrece un minuto para mirar qué la hace difícil, sin culpa: ¿es demasiado grande?, ¿está mal definida?, ¿ya no importa? Aplazar suele decir algo de la tarea, no de ti. El umbral de tres es una decisión de diseño.",
+      "evidencia": [
+        "Steel, 2007",
+        "Sirois & Pychyl, 2013",
+        "Wohl, Pychyl & Bennett, 2010"
+      ],
+      "limites": "El umbral de tres aplazamientos es una decisión de diseño, no una cifra de la literatura."
+    },
+    {
+      "clave": "diario_sueno",
+      "nombre": "Diario de sueño y regularidad",
+      "experimental": false,
+      "confianza": "Alta",
+      "finalidad": "Registrar horas de acostarse y levantarse; mirar la regularidad.",
+      "explicacion": "Anotar a qué hora te acuestas y te levantas y mirar la regularidad, que importa más de lo que parece. Sin puntuaciones de sueño ni fases: eso no lo puede medir una aplicación como esta.",
+      "evidencia": [
+        "Carney et al., 2012 (Consensus Sleep Diary)",
+        "Phillips et al., 2017",
+        "Windred et al., 2024"
+      ],
+      "limites": "Sin puntuaciones de sueño ni fases; la restricción de sueño es clínica."
+    },
+    {
+      "clave": "recordatorio_accionable",
+      "nombre": "Recordatorio como señal",
+      "experimental": false,
+      "confianza": "Media",
+      "finalidad": "Avisos semanales, elegidos por la persona, con el texto literal del plan.",
+      "explicacion": "Los avisos funcionan mejor cuando son pocos, elegidos por ti y dicen exactamente qué hacer (el texto literal de tu plan). Un aviso diario no funciona mejor que uno semanal, y el efecto se desgasta en semanas. Por eso Remanso no repite un mismo aviso más de dos veces.",
+      "evidencia": [
+        "Thakkar et al., 2016 (OR 2,11)",
+        "Pop-Eleches et al., 2011 (semanal mejor que diario)",
+        "Klasnja et al., 2019 (el efecto decae)"
+      ],
+      "limites": "Habituación en semanas; un mismo aviso no se repite más de dos veces."
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#F6F3EC"/>
+  <!-- Remanso: agua en calma. Tres ondas lentas, trazo fino. -->
+  <g fill="none" stroke="#2F7F76" stroke-width="22" stroke-linecap="round">
+    <path d="M96 236c40-32 80-32 120 0s80 32 120 0 80-32 120 0"/>
+    <path d="M96 300c40-32 80-32 120 0s80 32 120 0 80-32 120 0" opacity=".6"/>
+    <path d="M136 364c33-24 67-24 100 0s67 24 100 0 67-24 100 0" opacity=".3"/>
+  </g>
+</svg>
