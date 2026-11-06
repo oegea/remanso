@@ -243,6 +243,10 @@ Acerca de (qué es, qué no es, dónde están los datos).
 - **Fila de lista** (`.list-item`): 56 px, separador alineado con el texto; el fondo del
   hover respira 12 px a cada lado sin mover el contenido. En una ficha, la fila
   «etiqueta · valor ›» abre la hoja que cambia ese dato.
+- **Sesión de meditación** (`MeditateSession`): pantalla completa sin barras; una línea
+  con la parte actual y puntos de progreso; en el centro, el círculo de respiración o una
+  sola frase en serifa; el tiempo restante en `--ink-3`; abajo, Pausar y Terminar. Nada
+  más: la pantalla está pensada para no mirarse.
 - **Minirreproductor** (`MiniPlayer`): sólo existe mientras hay un sonido elegido. Una
   línea sobre la barra inferior en móvil (nombre, estado o tiempo hasta el apagado,
   pausa, siguiente, parar; volumen a partir de 480 px) y un bloque al pie de la barra

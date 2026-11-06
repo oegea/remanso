@@ -282,3 +282,16 @@ a.list-item, a.entry-row { color: var(--ink); }
 .list-item.is-current { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
 
 .btn-icon.is-on { color: var(--accent); background: var(--accent-soft); }
+
+/* Sesión de meditación: pantalla completa, texto grande y poco más. */
+.med-stage { min-height: 100dvh; display: flex; flex-direction: column; }
+.med-body { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-6); padding-top: var(--sp-6); padding-bottom: var(--sp-6); max-width: calc(var(--read-max) + 2 * var(--gutter)); }
+.med-text-wrap { display: flex; flex-direction: column; gap: var(--sp-3); }
+.med-text { font-family: var(--font-read); font-size: var(--fs-read); line-height: 1.6; text-align: center; margin: 0; text-wrap: balance; animation: fade-in var(--t-med) var(--ease); }
+.med-time { font-size: var(--fs-title); color: var(--ink-3); margin: 0; letter-spacing: 0.02em; }
+.med-foot { justify-content: center; gap: var(--sp-3); padding-bottom: calc(var(--sp-8) + env(safe-area-inset-bottom)); }
+.med-dots { display: inline-flex; gap: 5px; }
+.med-dots .dot { width: 7px; height: 7px; }
+.med-dots .dot.is-current { background: var(--accent); border-color: var(--accent); }
+
+@media (min-width: 720px) { .shell.is-immersive .sidebar { display: none; } }

@@ -15,6 +15,7 @@ const SIDE_EXTRA: { href: string; label: string; icon: IconName }[] = [
   { href: '/recordatorios', label: 'Recordatorios', icon: 'reminders' },
   { href: '/revision', label: 'Revisión', icon: 'review' },
   { href: '/impulso', label: 'Impulso', icon: 'impulse' },
+  { href: '/meditar', label: 'Meditar', icon: 'meditate' },
   { href: '/sonidos', label: 'Sonidos', icon: 'sound' },
   { href: '/buscar', label: 'Buscar', icon: 'search' },
   { href: '/ajustes', label: 'Ajustes', icon: 'settings' },

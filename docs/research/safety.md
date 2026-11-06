@@ -122,6 +122,28 @@ Cada riesgo lleva la evidencia de las notas y la mitigación que el producto imp
 
 ---
 
+### 2.11 Meditación: experiencias desagradables
+
+**Riesgo.** Meditar no es inocuo para todo el mundo. La revisión sistemática de Farias et al.
+(2020; 83 estudios, N = 6.703) estima un 8,3 % de eventos adversos (3,7 % en estudios
+experimentales, 33 % en observacionales), sobre todo ansiedad, ánimo bajo y «anomalías
+cognitivas»; Lindahl et al. (2017) documentaron entre ellas cambios en la sensación de uno
+mismo, irrealidad y despersonalización, también en personas sin historial previo y en
+prácticas breves. Las guías clínicas recomiendan cautela con historial de trauma o de
+psicosis.
+
+**Regla.** (1) Sesiones cortas por defecto (5–20 min) y siempre interrumpibles. (2) Al
+terminar, además de «cómo te sientes», una pregunta explícita y neutra sobre si hubo algo
+desagradable (ansiedad, mareo, irrealidad, distancia de uno mismo), que actúa como bandera
+en el diario. (3) Si se marca, un texto que normaliza («le pasa a bastante gente, no dice nada
+malo de ti»), desaconseja obligarse y ofrece acortar, dejarlo un tiempo o dejarlo del todo;
+si se repite en las últimas sesiones, recomienda parar y, para seguir, hacerlo con apoyo
+profesional. (4) La explicación de la sección expone estos datos antes de la primera sesión.
+(5) Nunca se puntúa ni se compara; no hay rachas ni objetivos de minutos.
+
+**Dónde.** `web/src/screens/Meditate.tsx` (formulario final), `web/src/domain/meditation.ts`
+(`unpleasantAmongLast`), textos en `web/src/text/help.ts` (`MED_*`).
+
 ## 3. Conductas y situaciones fuera del alcance
 
 ### 3.1 Qué queda fuera y por qué

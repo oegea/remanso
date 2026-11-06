@@ -332,6 +332,22 @@ pub const MIGRATIONS: &[&str] = &[
     ALTER TABLE goals ADD COLUMN close_reason TEXT;
     ALTER TABLE goals ADD COLUMN safety_shown INTEGER NOT NULL DEFAULT 0;
     "#,
+    // v6 — sesiones de meditación (la interfaz existe en la web; la terminal conserva el
+    //       esquema idéntico para que las bases y las copias sigan siendo compatibles).
+    r#"
+    CREATE TABLE meditation_sessions (
+        id              INTEGER PRIMARY KEY,
+        started_at      INTEGER NOT NULL,
+        ended_at        INTEGER,
+        planned_seconds INTEGER NOT NULL,
+        done_seconds    INTEGER NOT NULL DEFAULT 0,
+        plan            TEXT    NOT NULL DEFAULT '',   -- fases de la sesión (JSON)
+        feeling         INTEGER,                        -- -2 (más inquieto) … 2 (más en calma)
+        unpleasant      INTEGER NOT NULL DEFAULT 0,     -- 1 si hubo algo desagradable (bandera)
+        notes           TEXT    NOT NULL DEFAULT ''
+    );
+    CREATE INDEX meditation_sessions_started ON meditation_sessions(started_at);
+    "#,
 ];
 
 pub const CURRENT_VERSION: i32 = MIGRATIONS.len() as i32;

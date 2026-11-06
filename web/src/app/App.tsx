@@ -22,6 +22,7 @@ import { Impulse } from '../screens/Impulse';
 import { ImpulseHistory } from '../screens/ImpulseHistory';
 import { ReviewMenu, ReviewSession } from '../screens/Review';
 import { Sounds } from '../screens/Sounds';
+import { Meditate, MeditateSession } from '../screens/Meditate';
 import { MiniPlayer } from '../ui/MiniPlayer';
 
 export function App() {
@@ -49,9 +50,11 @@ function Shell() {
     return () => document.removeEventListener('visibilitychange', f);
   }, []);
   // El editor y el episodio de impulso ocupan toda la pantalla: sin barra inferior.
-  const fullscreen = /^\/(diario\/\d+|cuadernos\/\d+\/\d+|impulso$|revision\/sesion)/.test(loc);
+  const fullscreen = /^\/(diario\/\d+|cuadernos\/\d+\/\d+|impulso$|revision\/sesion|meditar\/sesion)/.test(loc);
+  // La sesión de meditación tampoco muestra la barra lateral: la pantalla debe quedar vacía.
+  const immersive = /^\/meditar\/sesion/.test(loc);
   return (
-    <div className="shell">
+    <div className={`shell ${immersive ? 'is-immersive' : ''}`}>
       <Sidebar />
       <main className="shell-main" id="main">
         {/* Transición de entrada por CSS al cambiar de sección (la clave sólo cambia con la ruta). */}
@@ -75,6 +78,8 @@ function Shell() {
               <Route path="/impulsos" component={ImpulseHistory} />
               <Route path="/buscar" component={Search} />
               <Route path="/mas" component={More} />
+              <Route path="/meditar" component={Meditate} />
+              <Route path="/meditar/sesion" component={MeditateSession} />
               <Route path="/sonidos" component={Sounds} />
               <Route path="/ajustes" component={Settings} />
               <Route component={Today} />

@@ -348,6 +348,22 @@ test.describe.serial('recorrido completo', () => {
     await expect(page.getByRole('button', { name: 'Reanudar' })).toBeVisible();
     await page.getByRole('button', { name: 'Parar' }).click();
     await expect(page.getByRole('region', { name: 'Suena ahora' })).toHaveCount(0);
+    // Meditar: empezar una sesión, terminarla antes, responder cómo te sientes y verla en el diario.
+    await go(page, 'Meditar'); await shot('19g-meditar');
+    await page.getByRole('button', { name: /^Empezar/ }).click();
+    await expect(page.getByText('Para empezar')).toBeVisible();
+    await shot('19h-sesion');
+    await page.getByRole('button', { name: 'Terminar' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Terminar' }).click();
+    await expect(page.getByRole('heading', { name: '¿Cómo te sientes ahora?' })).toBeVisible();
+    await page.getByRole('radio', { name: 'Algo más tranquilo' }).click();
+    await page.getByRole('button', { name: 'Sí, algo' }).click();
+    await expect(page.getByText(/Gracias por decirlo/)).toBeVisible();
+    await page.getByRole('button', { name: 'No', exact: true }).click();
+    await shot('19i-fin');
+    await page.getByRole('button', { name: 'Guardar' }).click();
+    await expect(page.getByText(/1 sesión · /)).toBeVisible();
+    await expect(page.getByText(/Algo más tranquilo/)).toBeVisible();
     await go(page, 'Buscar'); await page.getByRole('searchbox').fill('caminar'); await shot('20-buscar');
     await go(page, 'Ajustes'); await shot('21-ajustes');
     await page.getByRole('button', { name: /Técnicas y su evidencia/ }).click(); await shot('22-tecnicas');

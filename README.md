@@ -27,6 +27,10 @@ dedicado (Acer Aspire One con antiX Linux, consola de 80×24).
   Argon2id, bloqueo por inactividad, copias cifradas, exportación en claro sólo
   explícita. Sin red, sin telemetría, sin IA.
 
+- **Meditar** (sólo web): sesiones guiadas de calma y atención de 5 a 20 minutos, distintas
+  cada vez (reflexión, gong, respiraciones, cuerpo, respiración), con vibración, gong y voz
+  opcional; diario de sesiones con una pregunta de seguridad sobre experiencias
+  desagradables (`docs/research/safety.md` §2.11).
 - **Sonidos de fondo** (sólo web): lluvia, olas, viento, arroyo, fuego y ruidos blanco,
   rosa, marrón y gris, sintetizados por la propia aplicación (sin ficheros ni licencias),
   con temporizador de apagado. Opcionales; nada suena si no lo pones.

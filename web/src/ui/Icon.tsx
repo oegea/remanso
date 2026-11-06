@@ -35,6 +35,7 @@ const paths: Record<string, string> = {
   wave: 'M3 12c2-2.5 4-2.5 6 0s4 2.5 6 0 4-2.5 6 0',
   repeat: 'M17 2l4 4-4 4M3 11V9a4 4 0 014-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 01-4 4H3',
   sound: 'M11 5L6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 010 7M19 5a9 9 0 010 14',
+  meditate: 'M3 19h18M6 19a6 6 0 0112 0M12 3v3M5.6 6.6l2.1 2.1M18.4 6.6l-2.1 2.1',
   stop: 'M6 6h12v12H6z',
   next: 'M5 4l10 8-10 8V4zM19 5v14',
   pause: 'M8 5v14M16 5v14',

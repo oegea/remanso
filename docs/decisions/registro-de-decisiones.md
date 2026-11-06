@@ -206,6 +206,33 @@ la evidencia manda.
 - **Dónde.** `web/src/audio/` (`synth.ts` generadores puros con pruebas, `catalog.ts`,
   `engine.ts`, `player.ts`), `web/src/screens/Sounds.tsx`, `web/src/ui/MiniPlayer.tsx`.
 
+## ADR-017 · Sección de meditación: calma y atención, por sí misma (2026-11-06)
+
+- **Contexto.** Una sección para meditar por meditar, separada de los impulsos y de los
+  objetivos: explicar qué es y qué se sabe, la actitud (los pensamientos vienen y van; no
+  se trata de poner la mente en blanco sino de observar y volver al objeto de atención, sin
+  reproche), y guiar sesiones que no sean siempre iguales, aptas para hacerse con los ojos
+  cerrados.
+- **Decisión.** Sesiones de 5, 10, 15 o 20 minutos con una estructura fija y variantes
+  elegidas por semilla: reflexión amable para empezar → gong → tres respiraciones
+  profundas con el círculo → parte de cuerpo (asentarse, recorrido o sonidos, con
+  proporción variable) → atención a la respiración (nariz, vientre o contando, con dos a
+  cuatro recordatorios de «volver sin reproche») → gong → tres respiraciones → abrir los
+  ojos. Cambios señalados por vibración (donde el navegador lo permite), gong sintetizado
+  y, opcionalmente, una voz local breve (Web Speech), para no depender de la vista. Pausa y
+  parada en cualquier momento; pantalla encendida durante la sesión; sonido de fondo
+  opcional. Al terminar: cómo te sientes (cinco opciones), si hubo algo desagradable
+  (bandera) y notas; diario de sesiones en la misma pantalla. Sin rachas, sin objetivos de
+  minutos, sin puntuaciones. Esquema: migración v6 `meditation_sessions`, idéntica en la
+  terminal para que las bases sigan siendo compatibles. Vocabulario neutro: ninguna
+  tradición ni palabra de escuela aparece en la interfaz.
+- **Evidencia.** Goyal et al. (2014): ansiedad 0,38 y depresión 0,30 a las ocho semanas;
+  Norris et al. (2018): una sesión de diez minutos mejora la atención en novatos
+  (preliminar); Farias et al. (2020) y Lindahl et al. (2017) para los efectos adversos y la
+  pregunta de seguridad (`safety.md` §2.11).
+- **Dónde.** `web/src/domain/meditation.ts` (plan y diario, con pruebas), `web/src/audio/cues.ts`
+  (gong, vibración, voz, pantalla encendida), `web/src/screens/Meditate.tsx`.
+
 ## Pendientes
 
 - Temporizador opcional de veinte minutos en el episodio de impulso («decido cuando
@@ -223,5 +250,5 @@ la evidencia manda.
   exponenciales de ganancia suben de golpe al final (suenan a golpe); usar envolventes en
   campana (`Engine.bell`). Las ráfagas muy densas (más de ~100 fuentes por segundo) cortan
   el audio.
-- Sección de meditación (idea en estudio); hasta entonces los sonidos no se enlazan desde
-  la respiración guiada.
+- Meditación: enlazar los sonidos de meditación desde la sesión ya está (fondo opcional);
+  queda decidir si la respiración guiada del episodio de impulso enlaza a Meditar.

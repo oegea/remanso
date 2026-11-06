@@ -165,6 +165,9 @@ Formato de cada entrada: `[Clave]` Título. Revista/editorial. Identificadores t
   Notas: A · **Verificado: sí** — A: Verificado: sí (leído el texto completo en PMC)
 ### F
 
+- **[Goyal et al., 2014]** Meditation programs for psychological stress and well-being: a systematic review and meta-analysis. JAMA Internal Medicine 174(3):357-368. DOI: 10.1001/jamainternmed.2013.13018 | PMID: 24395196
+- **[Lindahl et al., 2017]** The varieties of contemplative experience: a mixed-methods study of meditation-related challenges in Western Buddhists. PLOS ONE 12(5):e0176239. DOI: 10.1371/journal.pone.0176239
+- **[Norris et al., 2018]** Brief mindfulness meditation improves attention in novices: evidence from ERPs and moderation by neuroticism. Frontiers in Human Neuroscience 12:315. DOI: 10.3389/fnhum.2018.00315 | PMID: 30127731
 - **[Farias et al., 2020]** Adverse events in meditation practices and meditation-based therapies: a systematic review. Acta Psychiatrica Scandinavica 142(5):374-393. DOI: 10.1111/acps.13225 | PMID: 32820538  
   Notas: B · **Verificado: sí** — B: Verificado: sí (leído el resumen)
 - **[Frattaroli, 2006]** Experimental disclosure and its moderators: A meta-analysis. Psychological Bulletin, 132(6), 823–865. DOI: 10.1037/0033-2909.132.6.823 | PMID: 17073523 | URL: https://www.gwern.net/doc/psychology/2006-frattaroli.pdf  
