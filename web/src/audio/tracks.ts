@@ -17,7 +17,9 @@ export interface Track {
   seconds: number;
 }
 
-export const TRACKS: Track[] = [];
+export const TRACKS: Track[] = [
+  { id: 'pagina-en-blanco', title: 'Página en blanco', file: 'pagina-en-blanco.mp3', uses: ['write'], desc: 'Piano de fieltro y Rhodes sobre un pulso lento y suave; nada que reclame atención.', seconds: 183 },
+];
 
 export function track(id: string): Track | undefined {
   return TRACKS.find((t) => t.id === id);
