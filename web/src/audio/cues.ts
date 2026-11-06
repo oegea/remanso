@@ -64,24 +64,39 @@ function spanishVoice(): SpeechSynthesisVoice | null {
   return es.find((v) => v.lang.toLowerCase() === 'es-es' && v.localService) ?? es.find((v) => v.localService) ?? es[0] ?? null;
 }
 
-/** Dice un texto corto con voz pausada y baja. Cancela lo que estuviera diciendo. */
-export function speak(text: string, volume = 0.8): void {
+// Chrome deja de hablar si la frase se recoge en el recolector de basura, y a veces se traga
+// una frase dicha justo después de `cancel()`: guardamos la referencia y esperamos un poco.
+let current: SpeechSynthesisUtterance | null = null;
+
+/** Dice un texto corto con voz pausada y algo más baja. Cancela lo que estuviera diciendo. */
+export function speak(text: string, volume = 0.9): void {
   if (!canSpeak()) return;
   try {
     const s = window.speechSynthesis;
-    s.cancel();
+    const wasSpeaking = s.speaking || s.pending;
+    if (wasSpeaking) s.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'es-ES';
-    u.rate = 0.82;
+    u.rate = 0.85;
     u.pitch = 0.95;
     u.volume = volume;
     const v = spanishVoice();
     if (v) u.voice = v;
-    s.speak(u);
+    current = u;
+    u.onend = () => { if (current === u) current = null; };
+    window.setTimeout(() => { if (current === u) s.speak(u); }, wasSpeaking ? 120 : 0);
   } catch { /* sin voz */ }
 }
 
+/** Nombre de la voz que se usará, para mostrarlo; null si no hay voz en español. */
+export function voiceName(): string | null {
+  if (!canSpeak()) return null;
+  const v = spanishVoice();
+  return v ? v.name : null;
+}
+
 export function hush(): void {
+  current = null;
   if (canSpeak()) { try { window.speechSynthesis.cancel(); } catch { /* nada */ } }
 }
 

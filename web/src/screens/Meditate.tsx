@@ -16,7 +16,7 @@ import { Sheet, Confirm } from '../ui/Sheet';
 import { Breath } from '../ui/Breath';
 import { TextEditor } from '../ui/Editor';
 import { announce } from '../ui/Live';
-import { canSpeak, canVibrate, gong, hush, keepAwake, speak, vibrate } from '../audio/cues';
+import { canSpeak, canVibrate, gong, hush, keepAwake, speak, vibrate, voiceName } from '../audio/cues';
 import { player } from '../audio/player';
 import { SOUNDS, type SoundId } from '../audio/catalog';
 import { TRACKS, track } from '../audio/tracks';
@@ -62,6 +62,12 @@ export function Meditate() {
           <h3 className="t-foot" style={{ fontWeight: 600, marginTop: 8 }}>{HELP.MED_OPTIONS}</h3>
           <div className="list">
             <OptRow label={HELP.MED_VOICE} help={canSpeak() ? HELP.MED_VOICE_HELP : HELP.MED_VOICE_NA} on={prefs.voice && canSpeak()} disabled={!canSpeak()} onChange={(v) => setPrefs({ voice: v })} />
+            {prefs.voice && canSpeak() && (
+              <div className="list-item" style={{ minHeight: 44 }}>
+                <span className="grow t-foot t-muted">{voiceName() ? HELP.MED_VOICE_USING.replace('{v}', voiceName()!) : HELP.MED_VOICE_NONE_ES}</span>
+                <button className="btn btn-text" onClick={() => speak(HELP.MED_VOICE_SAMPLE)}><Icon name="play" size={16} /> {HELP.MED_VOICE_TEST}</button>
+              </div>
+            )}
             <OptRow label={HELP.MED_VIBRATE} help={canVibrate() ? undefined : HELP.MED_VIBRATE_NA} on={prefs.vibrate && canVibrate()} disabled={!canVibrate()} onChange={(v) => setPrefs({ vibrate: v })} />
             <OptRow label={HELP.MED_GONG} on={prefs.gong} onChange={(v) => setPrefs({ gong: v })} />
             <div className="list-item" style={{ flexWrap: 'wrap' }}>
@@ -210,7 +216,7 @@ export function MeditateSession() {
     <div className="screen med-stage">
       <header className="topbar">
         <div className="content row" style={{ minHeight: 52 }}>
-          <div className="grow"><div className="t-foot t-muted">{phase.title}</div></div>
+          <div className="grow"><div className="t-foot t-muted">{phase.title} · {fmtMMSS(phase.seconds)}</div></div>
           <div className="med-dots" aria-label={`Parte ${idx + 1} de ${plan.length}`}>{plan.map((_, i) => <span key={i} className={`dot ${i < idx ? 'is-done' : i === idx ? 'is-current' : 'is-blank'}`} />)}</div>
         </div>
       </header>
@@ -221,7 +227,10 @@ export function MeditateSession() {
             {phase.eyesClosed && <p className="t-foot t-faint" style={{ textAlign: 'center' }}>{HELP.MED_EYES_CLOSED}</p>}
           </div>
         )}
-        <p className="med-time num" aria-live="off">{running ? fmtMMSS(remaining) : HELP.MED_PAUSED}</p>
+        <div style={{ textAlign: 'center' }}>
+          <p className="med-time num" aria-live="off">{running ? fmtMMSS(phase.seconds - elapsed) : HELP.MED_PAUSED}</p>
+          <p className="t-foot t-faint num" style={{ margin: '4px 0 0' }}>{fmtMMSS(remaining)} {HELP.MED_PART_LEFT}</p>
+        </div>
       </div>
       <div className="content med-foot row">
         <button className="btn btn-secondary" onClick={togglePause}><Icon name={running ? 'pause' : 'play'} size={18} /> {running ? HELP.MED_PAUSE : HELP.MED_RESUME}</button>
