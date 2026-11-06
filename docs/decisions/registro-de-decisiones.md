@@ -212,8 +212,10 @@ la evidencia manda.
   acabe»). Evidencia aún por revisar: la espera sola tiene evidencia baja y el craving
   puede durar más de treinta minutos (nota B); encajaría como variante de la espera activa.
 - Paridad de la versión de terminal con los cambios de la web.
-- Sonidos, fase 2: pistas musicales instrumentales (CC0 verificadas y propias) servidas bajo
-  demanda con «guardar para sin conexión», licencia propia en carpeta aparte. Lección de la
+- Sonidos, fase 2 (en marcha): ocho pistas instrumentales propias (CC BY 4.0, en
+  `web/public/musica/`, catálogo en `web/src/audio/tracks.ts`, script
+  `web/tools/add_track.py`) para escribir, calmarse, dormir y meditar; faltan unas veinte
+  más y las grabaciones CC0 de ambientes. Lección de la
   fase 1: la síntesis da bien la lluvia, los ruidos y el fuego, pero el mar (y en menor
   medida el viento y el arroyo) no convence con filtros; para esos ambientes conviene usar
   grabaciones reales CC0 en bucles cortos de uno o dos minutos. Dos trampas encontradas:
