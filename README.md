@@ -25,7 +25,9 @@ dedicado (Acer Aspire One con antiX Linux, consola de 80×24).
   de episodios.
 - **Seguridad**: SQLCipher (AES-256-CBC + HMAC-SHA512) con clave derivada por
   Argon2id, bloqueo por inactividad, copias cifradas, exportación en claro sólo
-  explícita. Sin red, sin telemetría, sin IA.
+  explícita. Sin red, sin telemetría, sin IA. En la web, atajo opcional con Face ID,
+  Touch ID o huella (passkey de plataforma con PRF que envuelve la clave; la contraseña
+  sigue siendo la única llave real, ADR-023).
 
 - **Meditar** (sólo web): sesiones guiadas de calma y atención de 5 a 20 minutos, distintas
   cada vez (reflexión, gong, respiraciones, cuerpo, respiración), con vibración, gong y una

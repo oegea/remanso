@@ -7,6 +7,7 @@ export const T = {
   LOCK_WRONG: "Contraseña incorrecta.",
   LOCK_HINT: "Escribe la contraseña y pulsa Intro.",
   LOCK_DERIVING: "Comprobando…",
+  LOCK_OPEN_FAILED: "No se han podido abrir los datos. Prueba otra vez; si sigue pasando, restaura una copia de seguridad.",
   CREATE_TITLE: "Primer uso",
   CREATE_PASSWORD: "Contraseña nueva",
   CREATE_REPEAT: "Repite la contraseña",

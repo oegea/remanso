@@ -3,6 +3,7 @@
  * preferencias no sensibles. Nada sale del dispositivo.
  */
 import { openDB, type IDBPDatabase } from 'idb';
+import { isEnrollment, random, type Enrollment } from '../crypto/biometric';
 
 export interface Prefs {
   theme: 'system' | 'light' | 'dark';
@@ -66,7 +67,34 @@ export async function savePrefs(p: Prefs): Promise<void> {
   await d.put(STORE, p, 'prefs');
 }
 
-/** Borra TODO (datos cifrados y preferencias). Sólo tras confirmación explícita. */
+/** Alta del atajo biométrico (clave envuelta; sin el autenticador no abre nada). */
+export async function loadBiometric(): Promise<Enrollment | null> {
+  const d = await idb();
+  const v = await d.get(STORE, 'biometric');
+  if (v === undefined) return null;
+  // Un registro corrupto o de otra versión se descarta: se vuelve a pedir la contraseña.
+  if (!isEnrollment(v)) { await d.delete(STORE, 'biometric'); return null; }
+  return v;
+}
+/** Identificador fijo (aleatorio, sin datos personales) para que el sistema sustituya la passkey en vez de acumularlas. */
+export async function biometricUserId(): Promise<Uint8Array> {
+  const d = await idb();
+  const v = (await d.get(STORE, 'biometric_user')) as Uint8Array | ArrayBuffer | undefined;
+  if (v) return v instanceof Uint8Array ? v : new Uint8Array(v);
+  const id = random(16);
+  await d.put(STORE, id, 'biometric_user');
+  return id;
+}
+export async function saveBiometric(e: Enrollment): Promise<void> {
+  const d = await idb();
+  await d.put(STORE, e, 'biometric');
+}
+export async function clearBiometric(): Promise<void> {
+  const d = await idb();
+  await d.delete(STORE, 'biometric');
+}
+
+/** Borra TODO (datos cifrados, preferencias y atajo biométrico). Sólo tras confirmación explícita. */
 export async function wipe(): Promise<void> {
   const d = await idb();
   await d.clear(STORE);

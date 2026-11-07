@@ -11,19 +11,24 @@ function getWorker(): Worker {
       const p = pending.get(e.data.id);
       if (!p) return;
       pending.delete(e.data.id);
-      if (e.data.key) p.resolve(new Uint8Array(e.data.key));
+      // El buffer llega transferido: se usa tal cual para que el borrado posterior lo alcance.
+      if (e.data.key) p.resolve(e.data.key);
       else p.reject(new Error(e.data.error ?? 'error al derivar la clave'));
     };
   }
   return worker;
 }
 
-/** Deriva la clave en el worker y la importa como CryptoKey no extraíble. */
-export async function deriveKeyOffThread(password: string, params: KdfParams): Promise<CryptoKey> {
-  const raw = await new Promise<Uint8Array>((resolve, reject) => {
+/** Deriva la clave en el worker y devuelve los 32 bytes en claro (quien los recibe debe borrarlos). */
+export function deriveRawOffThread(password: string, params: KdfParams): Promise<Uint8Array> {
+  return new Promise<Uint8Array>((resolve, reject) => {
     const id = ++seq;
     pending.set(id, { resolve, reject });
     getWorker().postMessage({ id, password, params });
   });
-  return importKey(raw);
+}
+
+/** Deriva la clave en el worker y la importa como CryptoKey no extraíble. */
+export async function deriveKeyOffThread(password: string, params: KdfParams): Promise<CryptoKey> {
+  return importKey(await deriveRawOffThread(password, params));
 }

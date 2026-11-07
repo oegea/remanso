@@ -345,6 +345,76 @@ la evidencia manda.
   pantallas táctiles: en iOS, como aplicación instalada, el foco programático dejaba el
   campo con aspecto de activo pero sin aceptar teclas.
 
+## ADR-023 · Atajo biométrico en la web: passkey de plataforma con PRF (2026-11-07)
+
+- **Contexto.** Escribir la contraseña en el móvil cada vez pesa, y Argon2id tarda unos
+  segundos. Face ID, Touch ID y la huella o la cara en Android están disponibles en la web
+  por WebAuthn. Pero WebAuthn sólo da una firma, y aquí no hay servidor que la verifique ni
+  nada que una firma pueda descifrar: hacía falta un secreto.
+- **Decisión.** Se usa la extensión PRF de WebAuthn: el autenticador de plataforma deriva
+  un secreto de 32 bytes que sólo entrega tras verificar a la persona y que nunca se
+  guarda. De ese secreto sale por HKDF-SHA256 (sal aleatoria propia, `info` fijo) una clave
+  AES-256-GCM no extraíble que envuelve los 32 bytes de la clave del contenedor (IV
+  aleatorio; datos asociados con la versión y el id de la credencial). En el dispositivo
+  queda sólo la clave envuelta y metadatos públicos (`IndexedDB`, clave `biometric`). Al
+  entrar: verificación → secreto → desenvolver → abrir el contenedor; sin Argon2, casi
+  instantáneo. `web/src/crypto/biometric.ts`.
+  - La contraseña sigue sirviendo siempre y es la única forma de abrir los datos en otro
+    dispositivo o desde una copia. El formato del contenedor no cambia; no se guarda la
+    contraseña ni nada derivado de ella.
+  - **Una sola passkey por instalación**: `user.id` es un identificador aleatorio fijo
+    (guardado en `IndexedDB`), así el sistema sustituye la passkey anterior en vez de
+    acumular llaves huérfanas en el llavero. Al cambiar la contraseña se vuelve a envolver
+    con la misma credencial (`rewrap`): una sola verificación y ninguna passkey nueva.
+  - **Cuándo se ofrece.** Sólo si el navegador declara soporte de PRF
+    (`getClientCapabilities`), para no crear passkeys que luego no sirvan; se ofrece una
+    sola vez tras entrar con contraseña («Ahora no» se recuerda en `localStorage`, igual
+    que desactivarlo en Ajustes). Si el navegador no sabe declararlo, no se ofrece solo
+    pero se puede intentar desde Ajustes, avisando de que se comprueba al activarlo.
+  - **Gesto y tiempos.** Algunos navegadores exigen que WebAuthn salga de un toque
+    reciente, y Argon2 tarda segundos. Por eso el alta va en dos pasos: primero la
+    contraseña (se comprueba abriendo el contenedor y la clave en claro queda retenida),
+    después un toque que lanza la verificación. Tras un desbloqueo con contraseña la oferta
+    tiene ya la clave retenida (`heldRaw`) y «Activar» es el toque. La clave retenida se
+    borra al entrar, al bloquear, al cerrar la hoja y, en la oferta, a los 90 segundos o al
+    pasar la aplicación a segundo plano (entonces se entra como con «Ahora no», sin
+    recordarlo). Mientras tanto no hay otra clave en claro que la que ya está en memoria
+    como `CryptoKey`.
+  - **Al abrir la aplicación** con el atajo activo, o al volver tras el bloqueo por
+    inactividad, se pide la verificación sin esperar un toque (sólo con la pestaña a la
+    vista). Tras «Bloquear ahora», que es una decisión de la persona, hace falta un toque:
+    si no, Face ID reabriría la aplicación en cuanto la persona siguiera mirando la
+    pantalla. Si el navegador exige gesto o la persona cancela, queda el botón y la
+    contraseña debajo.
+  - **Freno a la fuerza bruta (ADR-018).** Los fallos biométricos no cuentan y el atajo
+    no espera al freno: pasar la verificación del sistema no es adivinar. Entrar con el
+    atajo limpia el contador, como entrar con la contraseña. Comprobar la contraseña con la
+    sesión abierta (activar el atajo, cambiarla) no pasa por el freno: quien tiene la sesión
+    abierta ya ve todo, y la contraseña sólo protege las copias.
+  - **Invalidación.** Restaurar una copia o borrar todo elimina el atajo. Si el atajo deja
+    de abrir los datos por cualquier motivo (no desenvuelve, registro alterado o de otra
+    versión, contraseña cambiada en otro sitio) se descarta y se pide la contraseña; un
+    registro con forma inválida se descarta al leerlo.
+  - Credencial de plataforma, residente, verificación requerida, sin atestación y sin datos
+    personales. Desafío aleatorio en cada llamada aunque no haya servidor. La firma de la
+    aserción no se verifica: no aporta nada sin servidor; la seguridad descansa en que el
+    secreto PRF sólo existe tras la verificación.
+- **Consecuencias y límites.** Quien tenga el dispositivo desbloqueado y pase la
+  verificación del sistema (cara, huella o, según la política del sistema, el PIN) entra,
+  igual que en cualquier aplicación con passkey. Si la passkey se sincroniza por el llavero
+  del sistema, quien controle esa cuenta y además consiga una copia del perfil del navegador
+  abriría los datos sin la contraseña: el atajo añade esa dependencia de la cuenta de Apple
+  o Google, y por eso es opcional, se explica al ofrecerlo y se desactiva en Ajustes
+  (modelo de amenazas §3.13). La passkey queda en el llavero aunque se desactive el atajo
+  (la web no puede borrarla); se puede borrar desde los ajustes de contraseñas del
+  dispositivo. Soporte: Safari 18 (iOS 18, macOS 15) y Chrome reciente (depende de la
+  plataforma y del gestor de passkeys); el resto ve la opción como no disponible. Queda por
+  comprobar en un iPhone real que la verificación salta sin toque al abrir. Pruebas:
+  envoltura y WebAuthn simulado (`biometric.test.ts`) y flujo completo con un autenticador
+  virtual con PRF (`e2e/biometria.spec.ts`): oferta, alta, apertura sin contraseña,
+  bloqueo manual sin reapertura, cambio de contraseña, cancelación con reintento, freno,
+  retirada del autenticador y desactivación.
+
 ## Pendientes
 
 - Temporizador opcional de veinte minutos en el episodio de impulso («decido cuando

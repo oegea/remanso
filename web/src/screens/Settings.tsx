@@ -7,6 +7,8 @@ import { backupFileName, download, exportPlaintextZip } from '../app/backup';
 import { Topbar } from '../ui/Topbar';
 import { Icon } from '../ui/Icon';
 import { Sheet, Confirm } from '../ui/Sheet';
+import * as bio from '../crypto/biometric';
+import { BiometricCancelled, BiometricUnavailable, methodName } from '../crypto/biometric';
 import { announce } from '../ui/Live';
 import { T } from '../text/texts';
 import catalog from '../text/builtin.json';
@@ -27,7 +29,7 @@ type Technique = { clave: string; nombre: string; experimental: boolean; confian
 export function Settings() {
   const s = useSession();
   const [, navigate] = useLocation();
-  const [sheet, setSheet] = useState<null | 'password' | 'restore' | 'export' | 'wipe' | 'about' | 'help' | 'techniques' | 'supervised'>(null);
+  const [sheet, setSheet] = useState<null | 'password' | 'restore' | 'export' | 'wipe' | 'about' | 'help' | 'techniques' | 'supervised' | 'biometric'>(null);
   const [agree, setAgree] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [tech, setTech] = useState<Technique | null>(null);
@@ -92,8 +94,9 @@ export function Settings() {
               {prefs.passwordFeedback ? T.SETTINGS_YES : T.SETTINGS_NO}
             </button>
           </Row>
+          <BiometricRow onEnable={() => setSheet('biometric')} />
           <ActionRow label={T.SETTINGS_CHANGE_PW} onClick={() => setSheet('password')} />
-          <ActionRow label="Bloquear ahora" onClick={() => void session.lock()} icon="lock" />
+          <ActionRow label="Bloquear ahora" onClick={() => void session.lock('manual')} icon="lock" />
         </Group>
 
         <Group title="Datos">
@@ -116,6 +119,7 @@ export function Settings() {
       </div>
 
       <ChangePassword open={sheet === 'password'} onClose={() => setSheet(null)} />
+      <BiometricEnroll open={sheet === 'biometric'} onClose={() => setSheet(null)} />
       <Sheet open={sheet === 'restore'} onClose={() => setSheet(null)} title="Restaurar" closeLabel="Cancelar">
         <RestoreForm blob={null} setBlob={() => {}} onBack={() => setSheet(null)} onDone={() => { setSheet(null); announce('Copia restaurada.'); }} />
       </Sheet>
@@ -230,28 +234,112 @@ function ChangePassword({ open, onClose }: { open: boolean; onClose: () => void 
   const [b, setB] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Con el atajo biométrico activo, tras cambiar la contraseña hay que vincularlo de nuevo desde un toque.
+  const [rewrap, setRewrap] = useState(false);
+  useEffect(() => { if (open) { setRewrap(false); setError(null); } }, [open]);
+  // Si la pantalla se desmonta con la clave retenida (navegar a otra sección), se suelta.
+  useEffect(() => () => session.dropHeld(), []);
+  const mn = methodName();
   const submit = async () => {
     if (a.length < 8) return setError(T.CREATE_TOO_SHORT);
     if (a !== b) return setError(T.CREATE_MISMATCH);
     setBusy(true);
     setError(null);
     try {
-      await session.changePassword(cur, a);
-      announce(T.PW_CHANGED);
+      const r = await session.changePassword(cur, a);
       setCur(''); setA(''); setB('');
+      if (r === 'rewrap') { setRewrap(true); return; }
+      announce(T.PW_CHANGED);
       onClose();
     } catch (e) {
-      setError(e instanceof WrongPassword ? T.LOCK_WRONG : String(e));
+      setError(e instanceof WrongPassword ? T.LOCK_WRONG : T.LOCK_OPEN_FAILED);
     } finally {
       setBusy(false);
     }
   };
+  const keep = async () => {
+    setBusy(true); setError(null);
+    try { await session.rewrapBiometric(); announce(HELP.BIO_KEPT); onClose(); }
+    catch (e) { setError(e instanceof BiometricCancelled ? HELP.BIO_CANCELLED : HELP.BIO_FAIL.replace('{m}', mn)); }
+    finally { setBusy(false); }
+  };
+  const drop = async () => { session.dropHeld(); await session.disableBiometric(true); announce(`${T.PW_CHANGED} ${HELP.BIO_PW_CHANGED_OFF}`); onClose(); };
+  // Cerrar la hoja a medias equivale a quitar el atajo: la clave retenida no se queda en memoria.
+  const close = () => { if (rewrap) void drop(); else onClose(); };
   return (
-    <Sheet open={open} onClose={onClose} title={T.SETTINGS_CHANGE_PW} closeLabel="Cancelar" footer={<button className="btn btn-primary btn-block" disabled={busy} onClick={() => void submit()}>{busy ? T.LOCK_DERIVING : 'Cambiar'}</button>}>
+    <Sheet open={open} onClose={close} title={rewrap ? HELP.BIO_REWRAP_TITLE.replace('{m}', mn) : T.SETTINGS_CHANGE_PW} closeLabel={rewrap ? HELP.BIO_DROP : 'Cancelar'} footer={
+      rewrap
+        ? <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn btn-secondary" disabled={busy} onClick={() => void drop()}>{HELP.BIO_DROP}</button><button className="btn btn-primary" disabled={busy} onClick={() => void keep()}>{busy ? HELP.BIO_PREPARING : HELP.BIO_KEEP}</button></div>
+        : <button className="btn btn-primary btn-block" disabled={busy} onClick={() => void submit()}>{busy ? T.LOCK_DERIVING : 'Cambiar'}</button>
+    }>
+      {rewrap ? (
+        <div className="stack"><p className="t-muted">{HELP.BIO_REWRAP_BODY}</p>{error && <span className="error" role="alert">{error}</span>}</div>
+      ) : (
+        <div className="stack">
+          <div className="field"><label htmlFor="c0">{T.PW_CURRENT}</label><input id="c0" className="input" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} /></div>
+          <div className="field"><label htmlFor="c1">{T.PW_NEW}</label><input id="c1" className="input" type="password" autoComplete="new-password" value={a} onChange={(e) => setA(e.target.value)} /></div>
+          <div className="field"><label htmlFor="c2">{T.PW_REPEAT}</label><input id="c2" className="input" type="password" autoComplete="new-password" value={b} onChange={(e) => setB(e.target.value)} />{error && <span className="error" role="alert">{error}</span>}</div>
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+/** Fila «Entrar con Face ID…»: sí/no, con la disponibilidad real del navegador. */
+function BiometricRow({ onEnable }: { onEnable: () => void }) {
+  const s = useSession();
+  const [avail, setAvail] = useState<bio.Availability | null>(null);
+  useEffect(() => { void bio.available().then(setAvail); }, []);
+  const label = HELP.BIO_ROW.replace('{m}', methodName());
+  if (avail === 'no' && !s.biometric) return <Row label={label} help={HELP.BIO_NA}><button className="chip" disabled aria-pressed={false}>{T.SETTINGS_NO}</button></Row>;
+  return (
+    <Row label={label} help={avail === 'maybe' && !s.biometric ? `${HELP.BIO_ROW_HELP} ${HELP.BIO_MAYBE_HELP}` : HELP.BIO_ROW_HELP}>
+      <button className="chip" aria-pressed={s.biometric} disabled={avail === null && !s.biometric} onClick={() => { if (s.biometric) { void session.disableBiometric(true).then(() => announce(HELP.BIO_DISABLED)); } else onEnable(); }}>
+        {s.biometric ? T.SETTINGS_YES : T.SETTINGS_NO}
+      </button>
+    </Row>
+  );
+}
+
+/**
+ * Alta desde Ajustes en dos pasos: la contraseña (prueba de que es la persona; Argon2 tarda
+ * unos segundos) y, ya comprobada, un toque que lanza la verificación del sistema. Así la
+ * llamada WebAuthn sale de un gesto reciente, que algunos navegadores exigen.
+ */
+function BiometricEnroll({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [pw, setPw] = useState('');
+  const [step, setStep] = useState<'password' | 'link'>('password');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const mn = methodName();
+  useEffect(() => { if (open) { setPw(''); setStep('password'); setError(null); } }, [open]);
+  useEffect(() => () => session.dropHeld(), []);
+  const close = () => { session.dropHeld(); onClose(); };
+  const check = async () => {
+    if (!pw || busy) return;
+    setBusy(true); setError(null);
+    try { await session.holdPassword(pw); setPw(''); setStep('link'); }
+    catch (e) { setError(e instanceof WrongPassword ? T.LOCK_WRONG : T.LOCK_OPEN_FAILED); }
+    finally { setBusy(false); }
+  };
+  const link = async () => {
+    if (busy) return;
+    setBusy(true); setError(null);
+    try { await session.enrollBiometric(); announce(HELP.BIO_ENABLED.replace('{m}', mn)); onClose(); }
+    catch (e) { setError(e instanceof BiometricCancelled ? HELP.BIO_CANCELLED : e instanceof BiometricUnavailable ? HELP.BIO_UNSUPPORTED : HELP.BIO_FAIL.replace('{m}', mn)); }
+    finally { setBusy(false); }
+  };
+  return (
+    <Sheet open={open} onClose={close} title={HELP.BIO_ROW.replace('{m}', mn)} closeLabel="Cancelar" footer={
+      step === 'password'
+        ? <button className="btn btn-primary btn-block" disabled={busy || !pw} onClick={() => void check()}>{busy ? T.LOCK_DERIVING : 'Continuar'}</button>
+        : <button className="btn btn-primary btn-block" disabled={busy} onClick={() => void link()}>{busy ? HELP.BIO_PREPARING : HELP.BIO_LINK.replace('{m}', mn)}</button>
+    }>
       <div className="stack">
-        <div className="field"><label htmlFor="c0">{T.PW_CURRENT}</label><input id="c0" className="input" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} /></div>
-        <div className="field"><label htmlFor="c1">{T.PW_NEW}</label><input id="c1" className="input" type="password" autoComplete="new-password" value={a} onChange={(e) => setA(e.target.value)} /></div>
-        <div className="field"><label htmlFor="c2">{T.PW_REPEAT}</label><input id="c2" className="input" type="password" autoComplete="new-password" value={b} onChange={(e) => setB(e.target.value)} />{error && <span className="error" role="alert">{error}</span>}</div>
+        {HELP.BIO_OFFER_BODY.map((p) => <p key={p} className="t-muted">{p}</p>)}
+        {step === 'password'
+          ? <div className="field"><label htmlFor="bio-pw">{HELP.BIO_PW_PROMPT}</label><input id="bio-pw" className="input" type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void check(); }} />{error && <span className="error" role="alert">{error}</span>}</div>
+          : <div className="stack"><p role="status">{HELP.BIO_PW_OK}</p>{error && <span className="error" role="alert">{error}</span>}</div>}
       </div>
     </Sheet>
   );

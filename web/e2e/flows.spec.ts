@@ -1,36 +1,6 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-const PW = 'clave-de-prueba';
-
-/** Recorre la presentación inicial paso a paso hasta llegar al aviso de salud. */
-async function passWelcome(page: Page) {
-  for (const title of ['Hola', 'Nace de un conocimiento compartido', 'Sin nada que venderte', 'Un regalo', 'Tuyo, y sólo tuyo', 'Código abierto', 'Quién hay detrás']) {
-    await expect(page.getByRole('heading', { name: title })).toBeVisible();
-    await page.getByRole('button', { name: 'Siguiente' }).click();
-  }
-}
-
-async function firstUse(page: Page) {
-  await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Hola' })).toBeVisible();
-  await passWelcome(page);
-  await expect(page.getByRole('heading', { name: 'Antes de empezar' })).toBeVisible();
-  await page.getByRole('button', { name: 'Entendido' }).last().click();
-  await page.getByLabel('Contraseña nueva').fill(PW);
-  await page.getByLabel('Repite la contraseña').fill(PW);
-  await page.getByRole('button', { name: 'Crear' }).last().click();
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('de 2026', { timeout: 20_000 });
-}
-
-async function go(page: Page, label: string) {
-  // En móvil, algunos destinos están bajo «Más»; en escritorio todos están en la barra lateral.
-  const nav = page.getByRole('navigation', { name: 'Secciones' });
-  const direct = nav.getByRole('link', { name: label, exact: true });
-  if (await direct.count()) { await direct.first().click(); return; }
-  await nav.getByRole('link', { name: 'Más', exact: true }).click();
-  // En «Más» cada enlace lleva una línea de descripción: se busca por el principio del nombre.
-  await page.getByRole('link', { name: new RegExp('^' + label + '\\b') }).first().click();
-}
+import { PW, firstUse, go, passWelcome } from './helpers';
 
 test.describe.serial('recorrido completo', () => {
   test('primer uso, diario, cuadernos, tareas, recordatorios, objetivos, revisión, impulso, copia y bloqueo', async ({ page }) => {
@@ -301,10 +271,10 @@ test.describe.serial('recorrido completo', () => {
     await expect(page.getByLabel('Contraseña')).toBeVisible();
     await expect(page.getByText('Paseo')).toHaveCount(0);
     await page.getByLabel('Contraseña').fill('mala');
-    await page.getByRole('button', { name: 'Entrar' }).click();
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click();
     await expect(page.getByText('Contraseña incorrecta.')).toBeVisible({ timeout: 15_000 });
     await page.getByLabel('Contraseña').fill(PW);
-    await page.getByRole('button', { name: 'Entrar' }).click();
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Ajustes' })).toBeVisible({ timeout: 15_000 });
     await go(page, 'Hoy');
     await expect(page.getByText('Leer en el sofá')).toBeVisible();
@@ -312,7 +282,7 @@ test.describe.serial('recorrido completo', () => {
     // Recarga: los datos persisten cifrados y se vuelven a pedir la contraseña.
     await page.reload();
     await page.getByLabel('Contraseña').fill(PW);
-    await page.getByRole('button', { name: 'Entrar' }).click();
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('de 2026', { timeout: 20_000 });
     await go(page, 'Diario');
     await expect(page.getByText('Paseo')).toBeVisible({ timeout: 15_000 });

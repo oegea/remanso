@@ -330,6 +330,47 @@ No hay. Ninguna dependencia de ejecución abre conexiones de red (verificación 
 `dependencies.md`): sin telemetría, actualizaciones, sincronización ni comprobación
 de versión.
 
+### 3.13 Atajo biométrico en la web (passkey con PRF)
+
+**Qué hay en el dispositivo.** En `IndexedDB` (claves `biometric` y `biometric_user`): el
+id de una passkey de plataforma, un identificador aleatorio fijo de usuario, dos sales
+aleatorias, un IV y la clave del contenedor envuelta con AES-256-GCM. La clave de
+envoltura sale por HKDF-SHA256 del secreto PRF que el autenticador del sistema deriva sólo
+tras verificar a la persona (Face ID, Touch ID, huella, cara o el PIN del sistema según su
+política). Ese secreto no se guarda nunca. La contraseña no se guarda ni se deriva nada de
+ella; el contenedor no cambia.
+
+**Qué protege.** Leer el disco o el perfil del navegador da la clave envuelta, que sin el
+autenticador es un cifrado AES-256-GCM de 32 bytes: no reduce la seguridad del contenedor
+frente a la fuerza bruta (§3.3), porque el secreto PRF tiene 256 bits y no se deriva de
+nada adivinable. Copiar la base de datos del navegador a otro dispositivo no sirve por sí
+solo: la passkey no viaja con ella. Cambiar la contraseña vuelve a envolver con la misma
+credencial; restaurar una copia o borrar todo elimina el atajo; si el atajo deja de abrir
+los datos por cualquier motivo (no desenvuelve, registro alterado, contraseña cambiada en
+otro sitio) se descarta solo y se pide la contraseña.
+
+**Qué no protege.** Dispositivo desbloqueado en manos de alguien que pase la verificación
+del sistema: entra, igual que en cualquier aplicación con passkey. Es el modelo de
+confianza del llavero del sistema, y por eso el atajo es opcional, se explica al ofrecerlo
+y se desactiva en Ajustes. Y hay una dependencia nueva: si la passkey se sincroniza por el
+llavero (iCloud, Google), quien controle esa cuenta **y** consiga una copia del perfil del
+navegador (la clave envuelta no se sincroniza) abre los datos sin la contraseña y sin
+Argon2. Sin el atajo esa cuenta no tiene ningún papel. El bloqueo por inactividad sigue
+aplicándose; «Bloquear ahora» no se deshace solo (exige un toque para el atajo). Software
+malicioso en el navegador o `root` quedan fuera de alcance como en §3.11.
+
+**Decisiones de detalle.** Credencial de plataforma, residente, verificación requerida,
+sin atestación, sin datos personales en la credencial; `user.id` fijo para que el sistema
+sustituya la passkey en vez de acumularlas. Desafío aleatorio en cada llamada aunque no
+haya servidor que lo compruebe. La firma de la aserción no se verifica: no aportaría nada
+sin servidor. Los fallos biométricos no cuentan para el freno a la fuerza bruta de la
+contraseña, y el atajo no lo espera (pasar la verificación no es adivinar); entrar con él
+limpia el contador. Comprobar la contraseña con la sesión abierta (activar el atajo,
+cambiarla) tampoco pasa por el freno. Sólo se ofrece solo si el navegador declara soporte
+de PRF, para no crear passkeys huérfanas. La clave en claro retenida entre comprobar la
+contraseña y vincular se borra al entrar, al bloquear, al cerrar la hoja, a los 90 s o al
+pasar a segundo plano. ADR-023.
+
 ## 4. Protege / No protege
 
 | Escenario | Protege | No protege |
