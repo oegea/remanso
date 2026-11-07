@@ -281,6 +281,70 @@ la evidencia manda.
   sesión de meditación sería peor que esperar. Se comprueba si hay versión nueva al volver a
   la aplicación (visibilidad y foco) y cada hora. `web/src/app/Update.tsx`.
 
+## ADR-021 · Tareas en una sola lista por cercanía; lo de hoy en la pantalla Hoy (2026-11-07)
+
+- **Contexto.** Las tareas se repartían en pestañas «Hoy / Próximas / Sin fecha / Hechas»
+  según reglas que había que aprender: una tarea sin día previsto pero con fecha límite
+  a más de siete días no salía en ninguna pestaña (sólo en el calendario), y al crear o
+  aplazar una tarea había que adivinar a qué pestaña se había ido. La pantalla Hoy sólo
+  enseñaba un contador («3 tareas pendientes hoy»).
+- **Evidencia consultada.** Bellotti et al. (CHI 2004) observaron que el problema no es
+  priorizar sino *asegurar que lo importante se haga*; su prototipo era una sola lista
+  siempre visible con un orden inteligente por fecha límite, avisos que cambian de color
+  al acercarse y pequeñas «listas de prioridades» del día; tener fecha límite no predijo
+  por sí solo que una tarea se hiciera. Haraty, McGrenere y Tang (2016) encontraron que
+  una fuente de insatisfacción es no tener «una vista de todas las tareas en un sitio» y
+  que las fechas límite piden aviso, no categoría. Masicampo y Baumeister (2011): decidir
+  un plan concreto («cuándo») elimina la intrusión mental de lo pendiente, que es el
+  argumento para invitar a elegir día sin exigirlo (Gollwitzer y Sheeran, 2006, para el
+  efecto de las intenciones de implementación). Zhu, Yang y Hsee (2018): la gente prefiere
+  lo urgente a lo importante («mere urgency effect») salvo si la importancia se ve junto a
+  la fecha, de ahí que la prioridad se vea en la fila y ordene dentro de cada grupo.
+  Patrón común en Things, Todoist y Recordatorios de Apple: una vista «Hoy» que mezcla
+  vencidas, previstas hoy y límite hoy; las vencidas arriba y señaladas; la fecha límite
+  como aviso dentro de la lista. Detalle en `docs/research/references.md`.
+- **Decisión.** Una pestaña «Pendientes» con todo lo abierto en una sola lista, agrupada
+  por cercanía: pendientes de días anteriores (con «A hoy» de un toque), hoy, mañana,
+  próximos siete días, más adelante y, al final y visible, sin fecha. El día que manda es
+  el más cercano entre el previsto y el límite (`tasks.effectiveDay`), así ninguna tarea
+  se pierde; la fecha límite se lee en la fila como aviso («límite mañana», en ámbar si es
+  hoy, mañana o ya pasó) y nunca mueve la tarea de grupo. Dentro de cada grupo: prioridad
+  alta primero, luego el día, luego la más antigua. Al crear una tarea, la hoja pregunta
+  «¿Cuándo?» con fichas (hoy, mañana, sin fecha, otro día) y dice dónde saldrá; sin
+  fecha es un estado legítimo. Calendario, Proyectos y Hechas siguen como otras maneras de
+  mirar lo mismo. En la pantalla Hoy, «Tareas de hoy» muestra las vencidas y las de hoy
+  (máximo seis, marcables, con «y N más») y debajo, más apagado, hasta tres de los
+  próximos días. Las rutas antiguas (`/tareas/hoy`, `/tareas/proximas`,
+  `/tareas/sin-fecha`) llevan a la lista.
+- **Consecuencias.** La versión de terminal conserva las vistas antiguas hasta el trabajo
+  de paridad (sigue teniendo el hueco de las tareas con sólo fecha límite lejana). Las
+  pruebas unitarias cubren la agrupación y el caso de la fecha límite sola.
+
+## ADR-022 · Cierre de la meditación: ojos abiertos antes del círculo, despedida entera, notas editables (2026-11-07)
+
+- **Contexto.** Tres fallos vistos en uso real. (1) La voz decía «tres respiraciones
+  siguiendo el círculo» cuando el círculo ya llevaba un rato en marcha, y la frase inicial
+  de las respiraciones (unos 30 s) duraba tanto como la fase entera. (2) El guion pedía
+  seguir el círculo con los ojos cerrados y sólo después decía «abre los ojos». (3) La
+  frase final se cortaba porque el formulario aparecía en cuanto acababa el tiempo. Además,
+  las notas de una sesión no se podían cambiar ni borrar la sesión.
+- **Decisión.** Las fases con círculo llevan un tramo inicial (`Phase.lead`) en el que se
+  ve la indicación mientras la voz explica, y el círculo aparece cuando la explicación ha
+  terminado; sin voz no hay tramo y la fase dura lo de siempre, así el total sigue siendo
+  exacto (`makePlan(minutes, seed, voice)`). El cierre pasa a ser: gong → «Para terminar»
+  (abre los ojos, mira alrededor, y se anuncia lo que viene) → tres respiraciones con el
+  círculo, ya con los ojos abiertos → despedida («Hemos terminado…») que suena entera
+  antes del formulario: se espera a que acabe lo último, el tiempo o el audio, con un tope
+  de 30 s por si el audio no carga. En el diario, las notas de una sesión se pueden
+  cambiar y la sesión se puede borrar; la duración, cómo te sentiste y la bandera de
+  experiencia desagradable no se editan (son el registro de aquel momento). Lo mismo en
+  impulsos: un episodio se puede borrar desde su ficha o nada más terminarlo, y el
+  asistente tiene «Paso anterior» sin perder lo elegido.
+- **Consecuencias.** Se regeneraron tres frases (`deep_breaths`, `closing`, `farewell`;
+  `open_eyes` desaparece) en las dos voces. El campo de contraseña ya no se enfoca solo en
+  pantallas táctiles: en iOS, como aplicación instalada, el foco programático dejaba el
+  campo con aspecto de activo pero sin aceptar teclas.
+
 ## Pendientes
 
 - Temporizador opcional de veinte minutos en el episodio de impulso («decido cuando

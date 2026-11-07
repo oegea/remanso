@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { session } from '../app/session';
 import { bumpData, useDataVersion } from '../app/useSession';
@@ -11,12 +11,21 @@ import * as reviews from '../domain/reviews';
 import * as prompts from '../domain/prompts';
 import * as imp from '../domain/impulses';
 import { Answers } from './Review';
+import { TaskDetail, TaskList } from './Tasks';
 import { HELP } from '../text/help';
 import { fmtDateLong, fmtRelativeDays, fmtDateCompact, fmtTime, today, nowTs, tsToDay, weekStart } from '../domain/dates';
 import { Icon } from '../ui/Icon';
 import { WaveMark } from '../ui/Wave';
 import { announce } from '../ui/Live';
 import { T } from '../text/texts';
+
+/**
+ * Lo de hoy en la pantalla de resumen: vencidas y previstas o con límite hoy, hasta
+ * TODAY_MAX (una lista corta de prioridades, como las «informal priority lists» que
+ * describen Bellotti et al., 2004); debajo, más apagado, lo de los próximos días.
+ */
+const TODAY_MAX = 6;
+const NEXT_MAX = 3;
 
 /** Hoy: la fecha y, sólo si existen, lo pendiente y lo previsto. */
 export function Today() {
@@ -28,6 +37,8 @@ export function Today() {
   const data = useMemo(() => {
     const lastEntry = diary.lastEntryDay(db);
     const pending = tk.countPending(db, t);
+    const todayTasks = tk.forToday(db, t);
+    const nextTasks = tk.forNextDays(db, t);
     const due = rm.due(db, now);
     const active = goals.activeCount(db);
     const acts = actions.listActive(db).filter((a) => Schedule_plannedOn(a, t)).map((a) => ({ a, st: actions.statusOn(db, a.id, t) }));
@@ -44,9 +55,10 @@ export function Today() {
     const closeAnswers = reviews.todayAnswers(db, 'close', t);
     const impulses7 = imp.pattern(db, null, now).total_7;
     const lastOpen = Number(db.scalar<string>("SELECT value FROM settings WHERE key = 'last_open'") ?? 0);
-    return { lastEntry, pending, due, active, acts, dueGoals, weekly, lastOpen, openAvail, closeAvail, propose, openAnswers, closeAnswers, impulses7 };
+    return { lastEntry, pending, todayTasks, nextTasks, due, active, acts, dueGoals, weekly, lastOpen, openAvail, closeAvail, propose, openAnswers, closeAnswers, impulses7 };
   }, [db, dataVersion, t, now]);
 
+  const [openTask, setOpenTask] = useState<tk.Task | null>(null);
   const write = () => {
     const id = diary.create(db);
     bumpData();
@@ -128,8 +140,26 @@ export function Today() {
           </section>
         )}
 
+        {(data.todayTasks.length > 0 || data.nextTasks.length > 0) && (
+          <section className="stack" style={{ marginTop: 24 }} aria-labelledby="h-tasks">
+            <h2 id="h-tasks" className="list-head" style={{ padding: 0 }}>{HELP.TODAY_TASKS}</h2>
+            {data.todayTasks.length === 0 ? <p className="t-foot t-muted">{T.TASKS_EMPTY_TODAY[0]}</p> : (
+              <div className="card" style={{ padding: '0 16px' }}>
+                <TaskList tasks={data.todayTasks.slice(0, TODAY_MAX)} today={t} onOpen={setOpenTask} bucket="today" />
+                {data.todayTasks.length > TODAY_MAX && <Link href="/tareas" className="list-item t-foot">y {data.todayTasks.length - TODAY_MAX} más</Link>}
+              </div>
+            )}
+            {data.nextTasks.length > 0 && (
+              <div className="stack" style={{ gap: 4 }}>
+                <h3 className="t-foot t-muted" style={{ fontWeight: 600, margin: '8px 0 0' }}>{HELP.TODAY_TASKS_NEXT}</h3>
+                <TaskList tasks={data.nextTasks.slice(0, NEXT_MAX)} today={t} onOpen={setOpenTask} muted />
+              </div>
+            )}
+            <Link href="/tareas" className="btn btn-text" style={{ alignSelf: 'flex-start', marginLeft: -8 }}>{HELP.TODAY_TASKS_ALL}</Link>
+          </section>
+        )}
+
         <section className="stack" style={{ marginTop: 24 }}>
-          {data.pending > 0 && <Link href="/tareas" className="list-item"><Icon name="tasks" className="t-muted" /><span className="grow">{data.pending} {data.pending === 1 ? 'tarea pendiente' : 'tareas pendientes'} hoy</span><Icon name="forward" className="t-faint" /></Link>}
           {data.active > 0 && <Link href="/objetivos" className="list-item"><Icon name="goals" className="t-muted" /><span className="grow">{data.active} {data.active === 1 ? 'objetivo activo' : 'objetivos activos'}{data.dueGoals ? ` · ${data.dueGoals} con revisión disponible` : ''}</span><Icon name="forward" className="t-faint" /></Link>}
           {data.openAvail && <Link href="/revision/sesion/open" className="list-item"><Icon name="review" className="t-muted" /><span className="grow">{HELP.TODAY_OPEN_LINK}</span><Icon name="forward" className="t-faint" /></Link>}
           {data.closeAvail && <Link href="/revision/sesion/close" className="list-item"><Icon name="review" className="t-muted" /><span className="grow">{HELP.TODAY_CLOSE_LINK}</span><Icon name="forward" className="t-faint" /></Link>}
@@ -140,6 +170,7 @@ export function Today() {
         {empty && <div className="stack" style={{ marginTop: 24 }}>{HELP.TODAY_EMPTY.map((p) => <p key={p} className="t-muted">{p}</p>)}</div>}
       </div>
       <Link href="/impulso" className="fab" aria-label="Abrir Impulso"><Icon name="impulse" /> Impulso</Link>
+      {openTask && <TaskDetail task={openTask} onClose={() => setOpenTask(null)} />}
     </div>
   );
 }

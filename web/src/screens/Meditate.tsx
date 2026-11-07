@@ -12,7 +12,7 @@ import * as med from '../domain/meditation';
 import { fmtDateCompact, fmtTime, today, tsToDay } from '../domain/dates';
 import { Topbar } from '../ui/Topbar';
 import { Icon } from '../ui/Icon';
-import { Sheet, Confirm } from '../ui/Sheet';
+import { Sheet, Confirm, Prompt } from '../ui/Sheet';
 import { Breath } from '../ui/Breath';
 import { TextEditor } from '../ui/Editor';
 import { announce } from '../ui/Live';
@@ -40,6 +40,7 @@ export function Meditate() {
   const [, navigate] = useLocation();
   const [help, setHelp] = useState(false);
   const [open, setOpen] = useState<med.Session | null>(null);
+  const [ask, setAsk] = useState<null | 'notes' | 'delete'>(null);
   const [prefs, setPrefsState] = useState(() => med.prefs(db));
   const setPrefs = (p: Partial<med.Prefs>) => setPrefsState(med.setPrefs(db, p));
   useEffect(() => { med.discardUnfinished(db); }, [db]);
@@ -48,7 +49,7 @@ export function Meditate() {
   const t = today();
   const begin = () => {
     if (prefs.voice) { void playLine(prefs.voiceName, 'empecemos'); void warmVoice(prefs.voiceName); }
-    pending = { plan: med.makePlan(prefs.minutes), prefs };
+    pending = { plan: med.makePlan(prefs.minutes, Date.now(), prefs.voice), prefs };
     navigate('/meditar/sesion');
   };
   return (
@@ -65,11 +66,11 @@ export function Meditate() {
           <div className="list">
             <OptRow label={HELP.MED_VOICE} help={HELP.MED_VOICE_HELP} on={prefs.voice} onChange={(v) => setPrefs({ voice: v })} />
             {prefs.voice && (
-              <div className="list-item" style={{ alignItems: 'flex-start' }}>
-                <span className="grow"><span>{HELP.MED_VOICE_PICK}</span><span className="meta" style={{ display: 'block' }}>{HELP.MED_VOICE_PICK_HELP}</span></span>
-                <div className="row" style={{ gap: 6, flexShrink: 0 }} role="group" aria-label={HELP.MED_VOICE_PICK}>
+              <div className="list-item" style={{ flexWrap: 'wrap', rowGap: 8 }}>
+                <span className="grow" style={{ flexBasis: '100%' }}><span>{HELP.MED_VOICE_PICK}</span><span className="meta" style={{ display: 'block' }}>{HELP.MED_VOICE_PICK_HELP}</span></span>
+                <div className="row" style={{ gap: 6 }} role="group" aria-label={HELP.MED_VOICE_PICK}>
                   {VOICES.map((v) => <button key={v.id} className="chip" aria-pressed={prefs.voiceName === v.id} aria-label={`${v.label}, ${v.desc}`} onClick={() => setPrefs({ voiceName: v.id })}>{v.label}</button>)}
-                  <button className="btn btn-icon" aria-label={HELP.MED_VOICE_TEST} title={HELP.MED_VOICE_TEST} onClick={() => void playLine(prefs.voiceName, 'empecemos')}><Icon name="play" size={18} /></button>
+                  <button className="btn btn-text" aria-label={HELP.MED_VOICE_TEST} onClick={() => void playLine(prefs.voiceName, 'empecemos')}><Icon name="play" size={16} /> {HELP.MED_VOICE_TEST}</button>
                 </div>
               </div>
             )}
@@ -109,15 +110,19 @@ export function Meditate() {
       <Sheet open={help} onClose={() => setHelp(false)} title={HELP.MED_WHAT_Q}>
         <div className="stack">{HELP.MED_WHAT.map((p) => <p key={p} className="t-muted">{p}</p>)}</div>
       </Sheet>
-      <Sheet open={!!open} onClose={() => setOpen(null)} title={open ? `${fmtDateCompact(tsToDay(open.started_at), t)} · ${fmtTime(open.started_at)}` : ''}>
+      <Sheet open={!!open} onClose={() => setOpen(null)} title={open ? `${fmtDateCompact(tsToDay(open.started_at), t)} · ${fmtTime(open.started_at)}` : ''}
+        footer={<div className="row" style={{ flexWrap: 'wrap', gap: 8 }}><button className="btn btn-secondary" onClick={() => setAsk('notes')}><Icon name="edit" size={16} /> {HELP.MED_EDIT_NOTES}</button><button className="btn btn-text btn-danger" onClick={() => setAsk('delete')}>{HELP.MED_DELETE}</button></div>}>
         {open && (
           <dl className="stack t-muted" style={{ margin: 0 }}>
             <div><dt className="t-foot" style={{ fontWeight: 600 }}>{HELP.MED_DURATION}</dt><dd style={{ margin: 0, color: 'var(--ink)' }}>{fmtMMSS(open.done_seconds)} de {fmtMMSS(open.planned_seconds)}</dd></div>
             <div><dt className="t-foot" style={{ fontWeight: 600 }}>{HELP.MED_FEELING}</dt><dd style={{ margin: 0, color: 'var(--ink)' }}>{med.feelingLabel(open.feeling)}{open.unpleasant ? ` · ${HELP.MED_UNPLEASANT_FLAG}` : ''}</dd></div>
             {open.notes && <div><dt className="t-foot" style={{ fontWeight: 600 }}>Notas</dt><dd style={{ margin: 0, color: 'var(--ink)', whiteSpace: 'pre-wrap' }}>{open.notes}</dd></div>}
+            <p className="t-foot" style={{ margin: 0 }}>{HELP.MED_SESSION_FIXED}</p>
           </dl>
         )}
       </Sheet>
+      <Prompt open={ask === 'notes'} onClose={() => setAsk(null)} title={HELP.MED_EDIT_NOTES} initial={open?.notes ?? ''} multiline submitLabel="Guardar" onSubmit={(v) => { if (open) { med.setNotes(db, open.id, v); bumpData(); setOpen({ ...open, notes: v.trim() }); announce(HELP.MED_NOTES_SAVED); } }} />
+      <Confirm open={ask === 'delete'} onClose={() => setAsk(null)} destructive title="¿Borrar esta sesión?" body={HELP.MED_DELETE_CONFIRM} confirmLabel="Borrar" onConfirm={() => { if (open) { med.remove(db, open.id); bumpData(); setOpen(null); announce(HELP.MED_DELETED); } }} />
     </div>
   );
 }
@@ -142,7 +147,7 @@ export function MeditateSession() {
   const [elapsed, setElapsed] = useState(0);          // segundos dentro de la fase
   const [doneTotal, setDoneTotal] = useState(0);      // segundos totales hechos
   const [running, setRunning] = useState(true);
-  const [stage, setStage] = useState<'run' | 'form'>('run');
+  const [stage, setStage] = useState<'run' | 'ending' | 'form'>('run');
   const [stepText, setStepText] = useState<string | null>(null);
   const [askStop, setAskStop] = useState(false);
   const rowId = useRef<number | null>(null);
@@ -186,13 +191,13 @@ export function MeditateSession() {
       if (prefs.voice && step.voice) void playLine(prefs.voiceName, step.voice);
     }
     if (elapsed >= phase.seconds) {
-      if (idx + 1 >= plan.length) { finishRun(); return; }
+      if (idx + 1 >= plan.length) { endRun(); return; }
       const next = plan[idx + 1];
       setIdx(idx + 1); setElapsed(0); setStepText(null);
-      if (prefs.vibrate) vibrate(next.kind === 'closing_breaths' ? 'end' : 'phase');
-      if (prefs.gong && next.kind === 'closing_breaths') void gong();
+      if (prefs.vibrate) vibrate(next.kind === 'open_eyes' ? 'end' : 'phase');
+      if (prefs.gong && next.kind === 'open_eyes') void gong();
       const line = next.voice;
-      if (prefs.voice && line) window.setTimeout(() => void playLine(prefs.voiceName, line), prefs.gong && next.kind === 'closing_breaths' ? 2500 : 200);
+      if (prefs.voice && line) window.setTimeout(() => void playLine(prefs.voiceName, line), prefs.gong && next.kind === 'open_eyes' ? 2500 : 200);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elapsed]);
@@ -202,6 +207,16 @@ export function MeditateSession() {
     stopLine();
     setStage('form');
     void player.stop();
+  };
+  // El tiempo ha terminado: la despedida suena entera antes del formulario (con un tope por si el audio no carga).
+  const endRun = () => {
+    setRunning(false);
+    if (!prefs.voice) { finishRun(); return; }
+    setStage('ending');
+    let done = false;
+    const go = () => { if (!done) { done = true; finishRun(); } };
+    window.setTimeout(go, 30_000);
+    void playLine(prefs.voiceName, 'farewell').then(go);
   };
   const stopEarly = () => {
     if (prefs.gong) void gong(true);
@@ -218,7 +233,7 @@ export function MeditateSession() {
 
   const phase = plan[idx];
   const remaining = total - doneTotal;
-  const breathing = phase.kind === 'deep_breaths' || phase.kind === 'closing_breaths';
+  const breathing = (phase.kind === 'deep_breaths' || phase.kind === 'closing_breaths') && elapsed >= (phase.lead ?? 0) && stage === 'run';
   return (
     <div className="screen med-stage">
       <header className="topbar">
@@ -230,17 +245,17 @@ export function MeditateSession() {
       <div className="content med-body">
         {breathing ? <Breath /> : (
           <div className="med-text-wrap">
-            <p className="med-text">{stepText ?? phase.cue}</p>
+            <p className="med-text">{stage === 'ending' ? HELP.MED_ENDING : stepText ?? phase.cue}</p>
             {phase.eyesClosed && <p className="t-foot t-faint" style={{ textAlign: 'center' }}>{HELP.MED_EYES_CLOSED}</p>}
           </div>
         )}
         <div style={{ textAlign: 'center' }}>
-          <p className="med-time num" aria-live="off">{running ? fmtMMSS(phase.seconds - elapsed) : HELP.MED_PAUSED}</p>
+          <p className="med-time num" aria-live="off">{stage === 'ending' ? fmtMMSS(0) : running ? fmtMMSS(phase.seconds - elapsed) : HELP.MED_PAUSED}</p>
           <p className="t-foot t-faint num" style={{ margin: '4px 0 0' }}>{fmtMMSS(remaining)} {HELP.MED_PART_LEFT}</p>
         </div>
       </div>
       <div className="content med-foot row">
-        <button className="btn btn-secondary" onClick={togglePause}><Icon name={running ? 'pause' : 'play'} size={18} /> {running ? HELP.MED_PAUSE : HELP.MED_RESUME}</button>
+        <button className="btn btn-secondary" disabled={stage === 'ending'} onClick={togglePause}><Icon name={running ? 'pause' : 'play'} size={18} /> {running ? HELP.MED_PAUSE : HELP.MED_RESUME}</button>
         <button className="btn btn-text" onClick={() => setAskStop(true)}>{HELP.MED_STOP}</button>
       </div>
       <Confirm open={askStop} onClose={() => setAskStop(false)} title={HELP.MED_STOP_CONFIRM_TITLE} body={HELP.MED_STOP_CONFIRM_BODY} confirmLabel={HELP.MED_STOP} onConfirm={stopEarly} />

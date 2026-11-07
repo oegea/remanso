@@ -15,7 +15,8 @@ import { Breath } from '../ui/Breath';
 import { HELP } from '../text/help';
 import { Icon } from '../ui/Icon';
 import { HBars, Tile } from '../ui/Chart';
-import { Prompt, Choice, Sheet } from '../ui/Sheet';
+import { Prompt, Choice, Confirm, Sheet } from '../ui/Sheet';
+import { announce } from '../ui/Live';
 import { T } from '../text/texts';
 import catalog from '../text/builtin.json';
 
@@ -46,7 +47,7 @@ export function Impulse() {
   const [lapseStage, setLapseStage] = useState(0);
   const [forgave, setForgave] = useState(false);
   const [distress, setDistress] = useState(false);
-  const [ask, setAsk] = useState<null | 'body' | 'future' | 'reframe' | 'reflection' | 'lapseStep' | { planSit: string } | 'harm' | 'tech' | 'derivation'>(null);
+  const [ask, setAsk] = useState<null | 'body' | 'future' | 'reframe' | 'reflection' | 'lapseStep' | { planSit: string } | 'harm' | 'tech' | 'derivation' | 'delete'>(null);
   const [derivLines, setDerivLines] = useState<string[]>([]);
   const hasHistory = (db.scalar<number>('SELECT count(*) FROM impulse_episodes WHERE ended_at IS NOT NULL') ?? 0) > 0;
   const waitStart = useRef<number | null>(null);
@@ -85,6 +86,22 @@ export function Impulse() {
     bumpData();
   };
   const exit = () => { saveAll(); navigate('/'); };
+  // Un paso atrás sin perder nada: lo elegido sigue en memoria y se guarda igual al salir.
+  const canBack = step !== 'pick' && step !== 'done' && !(step === 'stop' && !active.length);
+  const back = () => {
+    if (ask || !canBack) return;
+    switch (step) {
+      case 'stop': if (episode != null) imp.remove(db, episode); setEpisode(null); setGoal(null); setStep('pick'); break;
+      case 'trigger': setStep('stop'); break;
+      case 'context': setStep('trigger'); break;
+      case 'pathway': setStep('context'); break;
+      case 'wait': if (sub > 0) setSub(sub - 1); else setStep('pathway'); break;
+      case 'after': setStep(pathway ? 'wait' : 'pathway'); break;
+      case 'outcome': setStep('after'); break;
+      case 'lapse': if (lapseStage > 0) setLapseStage(0); else setStep('outcome'); break;
+    }
+  };
+  const removeEpisode = () => { if (episode != null) imp.remove(db, episode); bumpData(); announce(HELP.IMPULSE_DELETED); navigate('/'); };
   const startEpisode = (g: goals.Goal | null) => {
     setGoal(g);
     const c = imp.loadConfig(db, g?.id ?? null);
@@ -135,7 +152,8 @@ export function Impulse() {
     <div className="editor-shell">
       <header className="topbar">
         <div className="content row" style={{ minHeight: 52 }}>
-          <button className="btn btn-text" style={{ marginLeft: -8 }} onClick={exit}><Icon name="close" /> {step === 'done' ? 'Volver' : 'Guardar y salir'}</button>
+          <button className="btn btn-icon" style={{ marginLeft: -8, visibility: canBack ? 'visible' : 'hidden' }} aria-label={HELP.IMPULSE_BACK} aria-hidden={!canBack} tabIndex={canBack ? 0 : -1} onClick={back}><Icon name="back" /></button>
+          <button className="btn btn-text" onClick={exit}><Icon name="close" /> {step === 'done' ? 'Volver' : 'Guardar y salir'}</button>
           <div className="grow" style={{ textAlign: 'center' }}><div className="steps" aria-label={`Paso ${progressIdx + 1} de ${ORDER.length}`}>{ORDER.map((s, i) => <span key={s} className={i <= progressIdx ? 'is-on' : ''} />)}</div></div>
           <button className="btn btn-icon" aria-label="Sobre esta técnica" onClick={() => setAsk('tech')}><Icon name="info" /></button>
         </div>
@@ -154,7 +172,7 @@ export function Impulse() {
             {step === 'stop' && (
               <div className="stack-lg">
                 <div className="stack">{steps('pausa_stop').map((l, i) => <p key={l} className={i === 0 ? 't-date' : 't-title'} style={{ fontWeight: i === 0 ? 600 : 500 }}>{l}</p>)}</div>
-                <Intensity label={T.IMPULSE_INTENSITY} onPick={(v) => { setBefore(v); setStep('trigger'); }} onSkip={() => setStep('trigger')} />
+                <Intensity label={T.IMPULSE_INTENSITY} initial={before} onPick={(v) => { setBefore(v); setStep('trigger'); }} onSkip={() => setStep('trigger')} />
               </div>
             )}
             {step === 'trigger' && (
@@ -227,7 +245,7 @@ export function Impulse() {
                 <p className="t-foot t-faint">Paso {sub + 1} de {Math.max(1, pathwaySteps().length)}</p>
               </div>
             )}
-            {step === 'after' && <Intensity label={T.IMPULSE_INTENSITY} onPick={(v) => { setAfter(v); setStep('outcome'); }} onSkip={() => setStep('outcome')} />}
+            {step === 'after' && <Intensity label={T.IMPULSE_INTENSITY} initial={after} onPick={(v) => { setAfter(v); setStep('outcome'); }} onSkip={() => setStep('outcome')} />}
             {step === 'outcome' && (
               <div className="stack">
                 <h1 className="t-title">{T.IMPULSE_OUTCOME}</h1>
@@ -262,6 +280,7 @@ export function Impulse() {
                   <button className="btn btn-primary" onClick={() => navigate('/')}>Volver</button>
                   <Link href="/impulsos" className="btn btn-text">{T.IMPULSE_HISTORY_LINK}</Link>
                 </div>
+                <button className="btn btn-text btn-danger" style={{ alignSelf: 'flex-start' }} onClick={() => setAsk('delete')}>{HELP.IMPULSE_DELETE}</button>
               </div>
             )}
           </motion.div>
@@ -278,6 +297,7 @@ export function Impulse() {
       <Sheet open={ask === 'derivation'} onClose={() => setAsk(null)} title={T.DERIVATION_TITLE} footer={<button className="btn btn-primary btn-block" onClick={() => setAsk(null)}>Entendido</button>}>
         <div className="notice stack">{derivLines.map((l) => <p key={l}>{l}</p>)}</div>
       </Sheet>
+      <Confirm open={ask === 'delete'} onClose={() => setAsk(null)} destructive title="¿Borrar este episodio?" body={HELP.IMPULSE_DELETE_CONFIRM} confirmLabel="Borrar" onConfirm={removeEpisode} />
       <Sheet open={ask === 'tech'} onClose={() => setAsk(null)} title={tech?.nombre ?? ''}>
         {tech && <div className="stack t-muted"><p><span className="chip is-on">Confianza {tech.confianza.toLowerCase()}</span>{tech.experimental && <span className="chip" style={{ marginLeft: 8 }}>experimental</span>}</p><p style={{ color: 'var(--ink)' }}>{tech.explicacion}</p><p className="t-foot" style={{ fontWeight: 600 }}>{HELP.EVIDENCE_HEAD}</p><ul className="stack" style={{ gap: 4 }}>{tech.evidencia.map((e) => <li key={e}>· {e}</li>)}</ul>{tech.limites && <><p className="t-foot" style={{ fontWeight: 600 }}>{HELP.LIMITS_HEAD}</p><p>{tech.limites}</p></>}<p className="t-foot">{HELP.CONFIDENCE_LEGEND}</p></div>}
       </Sheet>
@@ -286,8 +306,8 @@ export function Impulse() {
 }
 
 /** Intensidad 0–10: deslizador grande con el número visible y «Omitir». */
-function Intensity({ label, onPick, onSkip }: { label: string; onPick: (v: number) => void; onSkip: () => void }) {
-  const [v, setV] = useState(5);
+function Intensity({ label, initial, onPick, onSkip }: { label: string; initial?: number | null; onPick: (v: number) => void; onSkip: () => void }) {
+  const [v, setV] = useState(initial ?? 5);
   return (
     <div className="stack">
       <label htmlFor="intensity" className="t-lead">{label}</label>

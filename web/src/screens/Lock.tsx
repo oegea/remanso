@@ -7,6 +7,7 @@ import { HELP } from '../text/help';
 import { fmtDateLong, today } from '../domain/dates';
 import { T } from '../text/texts';
 import { WaveMark } from '../ui/Wave';
+import { FINE_POINTER } from '../ui/env';
 
 export function Lock() {
   const s = useSession();
@@ -54,7 +55,7 @@ export function Lock() {
         <div className="field">
           <label htmlFor="pw">{T.LOCK_PASSWORD}</label>
           <div className="pw-wrap">
-            <input id="pw" className="input" type={show && s.prefs.passwordFeedback ? 'text' : 'password'} autoComplete="current-password" autoFocus value={pw} onChange={(e) => setPw(e.target.value)} aria-describedby="pw-help" />
+            <input id="pw" className="input" type={show && s.prefs.passwordFeedback ? 'text' : 'password'} autoComplete="current-password" autoFocus={FINE_POINTER} value={pw} onChange={(e) => setPw(e.target.value)} aria-describedby="pw-help" />
             <button type="button" className="btn btn-text" onClick={() => setShow(!show)} aria-pressed={show}>{show ? 'Ocultar' : 'Mostrar'}</button>
           </div>
           {error && !waiting && <span className="error" role="alert">{error}</span>}

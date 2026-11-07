@@ -220,7 +220,7 @@ a.list-item, a.entry-row { color: var(--ink); }
 .check input[type="checkbox"] { accent-color: var(--accent); width: 22px; height: 22px; flex: none; margin: 1px 0 0; }
 
 /* Una ficha («sí»/«no») a la derecha de una fila nunca se aplasta. */
-.list-item > .chip { flex: none; white-space: nowrap; }
+.list-item .chip { flex: none; white-space: nowrap; }
 
 /* Marca en móvil: sólo la ola, centrada arriba, dentro del aire que ya tenía la fecha
    (la cabecera pasa de 32 px de margen superior a 12 px + marca). En escritorio la lleva la barra lateral. */
@@ -237,6 +237,7 @@ a.list-item, a.entry-row { color: var(--ink); }
 .task-title::after { content: ''; position: absolute; left: 0; top: 55%; height: 1px; width: 0; background: currentColor; transition: width var(--t-med) var(--ease); }
 .task-title.is-struck::after { width: 100%; }
 .task-row { transition: color var(--t-fast) var(--ease); }
+.list-head.is-warn { color: var(--warn); }
 .dot { transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease); }
 .list-done .task-wrap { animation: fade-in var(--t-fast) var(--ease); }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }

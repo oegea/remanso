@@ -190,6 +190,11 @@ export function finish(db: Database, id: Id, outcome: Outcome | string | null, r
 }
 
 /** Cierra el episodio si el usuario sale sin terminar: se guarda lo que haya. */
+/** Borra un episodio (registro por error, prueba). Las cifras de patrón se recalculan. */
+export function remove(db: Database, id: Id): void {
+  db.run('DELETE FROM impulse_episodes WHERE id = ?1', [id]);
+}
+
 export function closeIfOpen(db: Database, id: Id): void {
   db.run('UPDATE impulse_episodes SET ended_at = coalesce(ended_at, ?2) WHERE id = ?1', [id, nowTs()]);
 }

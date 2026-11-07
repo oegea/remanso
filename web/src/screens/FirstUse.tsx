@@ -6,6 +6,7 @@ import { WaveMark } from '../ui/Wave';
 import { readHeader, WrongPassword } from '../crypto/container';
 import { Welcome } from './Welcome';
 import { HEALTH_NOTICE, PRIVACY_NOTICE } from '../text/about';
+import { FINE_POINTER } from '../ui/env';
 
 export function FirstUse() {
   const [step, setStep] = useState<'welcome' | 0 | 1 | 2>('welcome');
@@ -77,7 +78,7 @@ function PasswordForm() {
       <p className="t-muted">Mínimo 8 caracteres. No se guarda en ningún sitio: si la olvidas, los datos no se pueden recuperar.</p>
       <div className="field">
         <label htmlFor="pw1">{T.CREATE_PASSWORD}</label>
-        <input id="pw1" className="input" type="password" autoComplete="new-password" autoFocus value={a} onChange={(e) => setA(e.target.value)} />
+        <input id="pw1" className="input" type="password" autoComplete="new-password" autoFocus={FINE_POINTER} value={a} onChange={(e) => setA(e.target.value)} />
       </div>
       <div className="field">
         <label htmlFor="pw2">{T.CREATE_REPEAT}</label>

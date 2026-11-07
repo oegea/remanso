@@ -188,8 +188,9 @@ tema. Fin. Se entra en Hoy, vacío.
 
 **Hoy.** La fecha, grande. Después, sólo si existe cada cosa: «Escribir» (acceso al
 diario con la última entrada en una línea neutra), recordatorios pendientes (máximo
-tres), acciones de hoy con sus puntos, «Revisión disponible», objetivos activos en una
-línea. Botón **Impulso** fijo abajo a la derecha (acción flotante, único elemento
+tres), acciones de hoy con sus puntos, «Tareas de hoy» (vencidas y de hoy, máximo seis,
+marcables desde aquí; debajo, apagadas, hasta tres de los próximos días), «Revisión
+disponible», objetivos activos en una línea. Botón **Impulso** fijo abajo a la derecha (acción flotante, único elemento
 flotante de la aplicación). Vacío de verdad en el primer uso: fecha, «Escribir», y una
 frase: «Esto es tu Hoy. Se irá llenando sólo con lo que tú añadas».
 
@@ -202,6 +203,12 @@ texto). Markdown ligero: `#`, `-`, `>` se resaltan sin convertir. Autoguardado a
 2 s y al perder el foco. Modo lectura (sin cursor) para releer. Ninguna pregunta
 aparece sola; las preguntas opcionales se abren desde un botón «Pregunta» que el usuario
 toca.
+
+**Tareas.** Una sola lista de lo pendiente, agrupada por cercanía con cabeceras pequeñas:
+pendientes de días anteriores (en ámbar, con «A hoy»), hoy, mañana, próximos siete días,
+más adelante, sin fecha. La fecha límite se lee en la fila como aviso y nunca cambia de
+grupo a la tarea. Al crear, la hoja pregunta «¿Cuándo?» con fichas y dice dónde saldrá.
+Calendario, Proyectos y Hechas son otras vistas de lo mismo (ADR-021).
 
 **Listas (diario, notas, tareas, objetivos).** Una fila por elemento, dos líneas máximo:
 principal y metadatos en `--ink-2`. Agrupación por fecha con cabeceras pequeñas. Acción
@@ -217,8 +224,8 @@ tendencia (línea) con los puntos crudos en `--ink-3`, el texto de N mínimo y l
 fija sobre variaciones. Acciones: fila con la semana en puntos (● hecho · sin registro ○
 marcado no hecho) y «2 de 3 esta semana»; tocar el punto de hoy cicla el estado.
 
-**Impulso.** Secuencia a pantalla completa, un paso por pantalla, botón «Siguiente» y
-«Guardar y salir» siempre visibles, barra de progreso discreta arriba (puntos, no
+**Impulso.** Secuencia a pantalla completa, un paso por pantalla, botón «Siguiente»,
+«Paso anterior» (flecha arriba a la izquierda) y «Guardar y salir» siempre visibles, barra de progreso discreta arriba (puntos, no
 porcentaje). La espera activa muestra la vía elegida y el tiempo transcurrido en
 minutos, nunca una cuenta atrás ni un anillo que se vacía. Las intensidades 0–10 son
 un control deslizante grande con el número visible y un botón «Omitir».

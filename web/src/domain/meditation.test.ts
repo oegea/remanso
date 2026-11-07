@@ -12,8 +12,14 @@ describe('plan de sesión', () => {
         expect(plan[1].kind).toBe('deep_breaths');
         expect(['settle', 'scan', 'sounds']).toContain(plan[2].kind);
         expect(plan[3].kind).toBe('breath');
-        expect(plan[4].kind).toBe('closing_breaths');
-        expect(plan[5].kind).toBe('open_eyes');
+        expect(plan[4].kind).toBe('open_eyes');
+        expect(plan[5].kind).toBe('closing_breaths');
+        expect(plan[1].lead, 'con voz, la explicación va antes del círculo').toBe(med.DEEP_LEAD);
+        expect(plan[1].seconds - plan[1].lead!).toBe(30);
+        const silent = med.makePlan(m, seed, false);
+        expect(med.planSeconds(silent)).toBe(m * 60);
+        expect(silent[1]).toMatchObject({ seconds: 30, lead: 0 });
+        expect(silent[4].seconds).toBe(med.OPEN_SILENT);
         for (const p of plan) { expect(p.seconds).toBeGreaterThan(0); for (const s of p.steps) expect(s.at).toBeLessThan(p.seconds); }
       }
     }
@@ -49,6 +55,11 @@ describe('diario de meditación', () => {
     expect(med.unpleasantAmongLast(db, 3)).toBe(1);
     expect(med.totals(db)).toEqual({ sessions: 2, minutes: 7 });
     expect(med.feelingLabel(l[1].feeling)).toBe('Algo más tranquilo');
+    med.setNotes(db, id, '  ahora mejor ');
+    expect(med.get(db, id)!.notes).toBe('ahora mejor');
+    med.remove(db, id2);
+    expect(med.list(db).map((s) => s.id)).toEqual([id]);
+    expect(med.totals(db)).toEqual({ sessions: 1, minutes: 5 });
   });
   it('descarta las empezadas y no terminadas', () => {
     med.start(db, med.makePlan(5, 1), 1000);

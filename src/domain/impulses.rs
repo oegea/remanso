@@ -188,6 +188,12 @@ pub fn finish(conn: &Connection, id: Id, outcome: Option<&str>, reflection: &str
     Ok(())
 }
 
+/// Borra un episodio (registro por error, prueba). Las cifras de patrón se recalculan.
+pub fn delete(conn: &Connection, id: Id) -> Result<()> {
+    conn.execute("DELETE FROM impulse_episodes WHERE id = ?1", params![id])?;
+    Ok(())
+}
+
 /// Cierra el episodio si el usuario sale sin terminar (Esc): se guarda lo que haya.
 pub fn close_if_open(conn: &Connection, id: Id) -> Result<()> {
     conn.execute("UPDATE impulse_episodes SET ended_at = coalesce(ended_at, ?2) WHERE id = ?1", params![id, dates::now_ts()])?;

@@ -5,13 +5,14 @@
  */
 import { useMemo, useState } from 'react';
 import { session } from '../app/session';
-import { useDataVersion } from '../app/useSession';
+import { bumpData, useDataVersion } from '../app/useSession';
 import * as imp from '../domain/impulses';
 import * as goals from '../domain/goals';
 import { fmtDateCompact, fmtTime, nowTs, today, tsToDay } from '../domain/dates';
 import { Topbar } from '../ui/Topbar';
 import { Icon } from '../ui/Icon';
-import { Sheet } from '../ui/Sheet';
+import { Confirm, Sheet } from '../ui/Sheet';
+import { announce } from '../ui/Live';
 import { ImpulsePrep, PatternCard, pathwayName } from './Impulse';
 import { HBars } from '../ui/Chart';
 import { HELP } from '../text/help';
@@ -26,6 +27,7 @@ export function ImpulseHistory() {
   const now = nowTs();
   const [open, setOpen] = useState<imp.Episode | null>(null);
   const [prep, setPrep] = useState(false);
+  const [del, setDel] = useState<imp.Episode | null>(null);
   const { eps, cur, prev, names } = useMemo(() => {
     const eps = imp.recent(db, 0, null);
     const cur = imp.pattern(db, null, now);
@@ -82,7 +84,8 @@ export function ImpulseHistory() {
         )}
       </div>
       <ImpulsePrep open={prep} onClose={() => setPrep(false)} />
-      <Sheet open={!!open} onClose={() => setOpen(null)} title={open ? `${fmtDateCompact(tsToDay(open.started_at), t)} · ${fmtTime(open.started_at)}` : ''}>
+      <Sheet open={!!open} onClose={() => setOpen(null)} title={open ? `${fmtDateCompact(tsToDay(open.started_at), t)} · ${fmtTime(open.started_at)}` : ''}
+        footer={<button className="btn btn-text btn-danger" onClick={() => setDel(open)}>{HELP.IMPULSE_DELETE}</button>}>
         {open && (
           <dl className="stack t-muted" style={{ margin: 0 }}>
             {open.goal_id != null && names.get(open.goal_id) && <Row k="Objetivo" v={names.get(open.goal_id)!} />}
@@ -96,6 +99,7 @@ export function ImpulseHistory() {
           </dl>
         )}
       </Sheet>
+      <Confirm open={!!del} onClose={() => setDel(null)} destructive title="¿Borrar este episodio?" body={HELP.IMPULSE_DELETE_CONFIRM} confirmLabel="Borrar" onConfirm={() => { if (del) { imp.remove(db, del.id); bumpData(); setOpen(null); announce(HELP.IMPULSE_DELETED); } }} />
     </div>
   );
 }

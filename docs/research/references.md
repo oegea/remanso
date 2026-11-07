@@ -45,6 +45,9 @@ Formato de cada entrada: `[Clave]` Título. Revista/editorial. Identificadores t
   Notas: B · **Verificado: sí** — B: Verificado: sí (leído el resumen)
 ### B
 
+- **[Bellotti et al., 2004]** What a to-do: studies of task management towards the design of a personal task list manager. Proc. CHI 2004, 735–742. DOI: 10.1145/985692.985785 | URL: https://hci.rwth-aachen.de/materials/conferences/CHI2004/1p735.pdf  
+  Notas: ADR-021 · **Verificado: sí** (texto completo leído el 2026-11-07)
+
 - **[Bandura, 1977]** Self-efficacy: Toward a unifying theory of behavioral change. Psychological Review 84(2):191–215. DOI: 10.1037/0033-295X.84.2.191 | PMID: 847061 | URL: https://doi.org/10.1037/0033-295X.84.2.191  
   Notas: A · **Verificado: parcialmente** — A: Verificado: parcialmente (metadatos confirmados en Europe PMC; resumen no leído; se cita sólo como fundamento teórico)
 - **[Bandura & Schunk, 1981]** Cultivating competence, self-efficacy, and intrinsic interest through proximal self-motivation. Journal of Personality and Social Psychology, 41(3), 586–598. DOI: 10.1037/0022-3514.41.3.586 (C da URL: https://core.ac.uk/download/357623113.pdf)  
@@ -210,6 +213,9 @@ Formato de cada entrada: `[Clave]` Título. Revista/editorial. Identificadores t
   Notas: E · **Verificado: sí** — E: Verificado: sí (leído el resumen)
 ### H
 
+- **[Haraty, McGrenere & Tang, 2016]** How personal task management differs across individuals. International Journal of Human-Computer Studies 88:13–37. DOI: 10.1016/j.ijhcs.2015.11.006 | URL: https://www.cs.ubc.ca/labs/edapt/papers/haraty2016_2.pdf  
+  Notas: ADR-021 · **Verificado: sí** (texto completo leído el 2026-11-07)
+
 - **[Hagger & Luszczynska, 2014]** Implementation intention and action planning interventions in health contexts: State of the research and proposals for the way forward. Applied Psychology: Health and Well-Being 6(1):1–47. DOI: 10.1111/aphw.12017 | PMID: 24591064 | URL: https://doi.org/10.1111/aphw.12017  
   Notas: A · **Verificado: sí** — A: Verificado: sí (leído el resumen vía Europe PMC)
 - **[Hagger et al., 2016]** A multilab preregistered replication of the ego-depletion effect. Perspectives on Psychological Science 11(4):546-573. DOI: 10.1177/1745691616652873 | PMID: 27474142  
@@ -333,6 +339,9 @@ Formato de cada entrada: `[Clave]` Título. Revista/editorial. Identificadores t
 - **[Lyubomirsky, Sousa & Dickerhoof, 2006]** The costs and benefits of writing, talking, and thinking about life's triumphs and defeats. Journal of Personality and Social Psychology, 90(4), 692–708. DOI: 10.1037/0022-3514.90.4.692 | PMID: 16649864 | URL: https://escholarship.org/content/qt93k8b43s/qt93k8b43s.pdf  
   Notas: D · **Verificado: sí** — D: Verificado: sí (resumen y partes del texto completo leídos)
 ### M
+
+- **[Masicampo & Baumeister, 2011]** Consider it done! Plan making can eliminate the cognitive effects of unfulfilled goals. Journal of Personality and Social Psychology 101(4):667–683. DOI: 10.1037/a0024192 | PMID: 21688924  
+  Notas: ADR-021 · **Verificado: sí** (resumen leído el 2026-11-07)
 
 - **[Ma et al., 2023]** Effects of habit formation interventions on physical activity habit strength: Meta-analysis and meta-regression. International Journal of Behavioral Nutrition and Physical Activity 20:109. DOI: 10.1186/s12966-023-01493-3 | PMID: 37700303 | URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC10498635  
   Notas: A · **Verificado: sí** — A: Verificado: sí (leído el texto completo en PMC)
@@ -629,6 +638,9 @@ Formato de cada entrada: `[Clave]` Título. Revista/editorial. Identificadores t
 - **[Yardley et al., 2016]** Understanding and promoting effective engagement with digital behavior change interventions. American Journal of Preventive Medicine 51(5):833–842. DOI: 10.1016/j.amepre.2016.06.015 | PMID: 27745683 | URL: https://doi.org/10.1016/j.amepre.2016.06.015  
   Notas: A · **Verificado: sí** — A: Verificado: sí (leído el resumen vía Europe PMC)
 ### Z
+
+- **[Zhu, Yang & Hsee, 2018]** The mere urgency effect. Journal of Consumer Research 45(3):673–690. DOI: 10.1093/jcr/ucy008 (DOI no confirmado en la web del editor; volumen y páginas sí)  
+  Notas: ADR-021 · **Verificado: parcialmente** (resumen leído el 2026-11-07)
 
 - **[Zachariae & O'Toole, 2015]** The effect of expressive writing intervention on psychological and physical health outcomes in cancer patients—a systematic review and meta-analysis. Psycho-Oncology, 24(11), 1349–1359. DOI: 10.1002/pon.3802  
   Notas: D · **Verificado: parcialmente** — D: Verificado: parcialmente (sólo listado de búsqueda con cifras del resumen)

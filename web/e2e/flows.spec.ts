@@ -85,10 +85,34 @@ test.describe.serial('recorrido completo', () => {
     await page.getByRole('button', { name: 'Aceptar' }).last().click();
     await page.waitForTimeout(400);
     await page.getByRole('dialog').getByRole('button', { name: 'Cerrar', exact: true }).first().click();
-    await expect(page.getByText('Comprar pan')).toHaveCount(0);
-    await page.getByRole('tab', { name: 'Próximas' }).click();
-    await expect(page.getByText('Comprar pan')).toBeVisible();
-    await page.getByRole('tab', { name: 'Hoy' }).click();
+    // Aplazada a mañana: sigue en la misma lista, bajo «Mañana», sin cambiar de pestaña.
+    await expect(page.getByRole('heading', { name: /^Mañana/ })).toBeVisible();
+    await expect(page.getByText('Comprar pan integral')).toBeVisible();
+    // Fichas «¿Cuándo?»: sin fecha va al final; una fecha límite sola no esconde la tarea.
+    await page.getByRole('button', { name: 'Tarea', exact: true }).click();
+    await page.locator('.prompt-input:visible').last().fill('Renovar el pasaporte');
+    await page.getByRole('button', { name: 'Sin fecha' }).click();
+    await page.getByRole('button', { name: 'Añadir' }).last().click();
+    await expect(page.getByRole('heading', { name: /^Sin fecha/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Abrir Renovar el pasaporte' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: /Fecha límite/ }).click();
+    await page.locator('.prompt-input:visible').last().fill('+20');
+    await page.getByRole('button', { name: 'Aceptar' }).last().click();
+    await page.waitForTimeout(300);
+    await page.getByRole('dialog').getByRole('button', { name: 'Cerrar', exact: true }).first().click();
+    await expect(page.getByRole('heading', { name: /^Más adelante/ })).toBeVisible();
+    await expect(page.getByText(/^límite /)).toBeVisible();
+    // Una tarea de días anteriores sale arriba, señalada, con «A hoy» para traerla de un toque.
+    await page.getByRole('button', { name: 'Tarea', exact: true }).click();
+    await page.locator('.prompt-input:visible').last().fill('Devolver el libro');
+    await page.getByRole('button', { name: 'Otro día' }).click();
+    const past = new Date(Date.now() - 2 * 86_400_000);
+    await page.getByLabel('Qué día').fill(`${past.getDate()}/${past.getMonth() + 1}/${past.getFullYear()}`);
+    await page.getByRole('button', { name: 'Añadir' }).last().click();
+    await expect(page.getByRole('heading', { name: /^Pendientes de días anteriores/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Devolver el libro: mover a hoy' }).click();
+    await expect(page.getByRole('heading', { name: /^Pendientes de días anteriores/ })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /^Hoy/ })).toBeVisible();
     await page.getByRole('button', { name: 'Marcar hecha', exact: true }).first().click();
     // La tarea marcada no desaparece: queda al final, bajo «Hechas hoy».
     await expect(page.getByRole('heading', { name: 'Hechas hoy' })).toBeVisible();
@@ -199,6 +223,9 @@ test.describe.serial('recorrido completo', () => {
     await expect(page.getByText('Para.')).toBeVisible();
     await page.getByRole('button', { name: 'Continuar' }).click();
     await page.getByRole('button', { name: 'estrés' }).click();
+    // «Paso anterior» vuelve sin perder nada.
+    await page.getByRole('button', { name: 'Paso anterior' }).click();
+    await page.getByRole('button', { name: 'estrés' }).click();
     await page.getByRole('button', { name: 'hambre' }).click();
     await page.getByRole('button', { name: 'Siguiente' }).last().click();
     await page.getByRole('button', { name: /Surfear/ }).click();
@@ -242,7 +269,10 @@ test.describe.serial('recorrido completo', () => {
     await expect(page.locator('.list-item .episode')).toHaveCount(2);
     await page.locator('.list-item .episode').first().click();
     await expect(page.getByRole('dialog').getByText('Respiración lenta', { exact: true })).toBeVisible();
-    await page.keyboard.press('Escape');
+    // Un episodio registrado por error se puede borrar desde su ficha.
+    await page.getByRole('dialog').getByRole('button', { name: 'Borrar este episodio' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Borrar', exact: true }).click();
+    await expect(page.locator('.list-item .episode')).toHaveCount(1);
 
     // Copia de seguridad: descarga un archivo .remanso.
     await go(page, 'Ajustes');
@@ -292,6 +322,7 @@ test.describe.serial('recorrido completo', () => {
     // Capturas de cada pantalla para la revisión de diseño (e2e/shots/<proyecto>/).
     const shot = async (name: string) => { await page.waitForTimeout(400); await page.screenshot({ path: `e2e/shots/${test.info().project.name}/${name}.png`, fullPage: false }); };
     await go(page, 'Hoy'); await shot('01-hoy');
+    await page.getByRole('heading', { name: 'Tareas de hoy' }).evaluate((el) => el.scrollIntoView({ block: 'start' })); await shot('01b-hoy-tareas');
     await go(page, 'Diario'); await shot('02-diario');
     await page.getByText('Paseo').first().click(); await shot('03-entrada');
     await page.getByRole('button', { name: 'Listo' }).click();
@@ -300,9 +331,10 @@ test.describe.serial('recorrido completo', () => {
     await page.getByText('Primera nota').click(); await shot('06-nota');
     await page.getByRole('button', { name: 'Listo' }).click();
     await go(page, 'Tareas'); await shot('07-tareas');
+    await page.getByRole('button', { name: 'Tarea', exact: true }).click(); await shot('07a-nueva-tarea'); await page.keyboard.press('Escape');
     await page.getByRole('tab', { name: 'Calendario' }).click(); await shot('08-calendario');
     await page.getByRole('tab', { name: 'Proyectos' }).click(); await page.getByRole('button', { name: /^Mudanza/ }).click(); await shot('07b-proyecto'); await page.getByRole('button', { name: 'Atrás' }).click();
-    await page.getByRole('tab', { name: 'Próximas' }).click();
+    await page.getByRole('tab', { name: 'Pendientes' }).click();
     await page.getByRole('button', { name: /^Abrir / }).first().click(); await shot('09-tarea');
     await page.keyboard.press('Escape');
     await go(page, 'Recordatorios'); await shot('10-recordatorios');
@@ -350,7 +382,13 @@ test.describe.serial('recorrido completo', () => {
     await expect(page.getByRole('region', { name: 'Suena ahora' })).toHaveCount(0);
     // Meditar: empezar una sesión, terminarla antes, responder cómo te sientes y verla en el diario.
     await go(page, 'Meditar'); await shot('19g-meditar');
-    await page.getByRole('button', { name: /^Empezar/ }).click();
+    const start = page.getByRole('button', { name: /^Empezar/ });
+    // En Chromium móvil el clic normal queda interceptado tras el desplazamiento automático
+    // (el botón está visible y libre: se comprueba con elementFromPoint); se envía el clic directo.
+    await start.scrollIntoViewIfNeeded();
+    const hit = await start.evaluate((el) => { const r = el.getBoundingClientRect(); return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === el; });
+    expect(hit, 'el botón Empezar está a la vista y nada lo tapa').toBe(true);
+    await start.click({ timeout: 5_000 }).catch(() => start.dispatchEvent('click'));
     await expect(page.getByText('Para empezar')).toBeVisible();
     await shot('19h-sesion');
     await page.getByRole('button', { name: 'Terminar' }).click();

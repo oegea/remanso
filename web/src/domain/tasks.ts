@@ -168,69 +168,80 @@ export function deleteTask(db: Database, id: Id): void {
 }
 export { deleteTask as delete };
 
-export type View =
-  /** Previstas o vencidas hasta hoy (incluye las de días pasados como «pendientes»). */
-  | 'today'
-  /** Próximos 7 días (sin las de hoy). */
-  | 'upcoming'
-  /** Sin fecha. */
-  | 'someday'
-  /** Completadas o cerradas recientemente. */
-  | 'done';
+/**
+ * Lo abierto en una sola lista, agrupado por cercanía. El día que manda es el más
+ * cercano entre el previsto y el límite: una tarea con sólo fecha límite se ordena
+ * por ella y nunca queda «en ningún sitio». Sin fecha va al final, visible.
+ */
+export type Bucket = 'overdue' | 'today' | 'tomorrow' | 'week' | 'later' | 'someday';
+export const BUCKETS: readonly Bucket[] = ['overdue', 'today', 'tomorrow', 'week', 'later', 'someday'];
 
-export function list(db: Database, view: View, todayDay: string, project: Id | null = null): Task[] {
-  const week = addDays(todayDay, 7);
+/** El más cercano entre día previsto y fecha límite; null si no tiene ninguno. */
+export function effectiveDay(t: Pick<Task, 'scheduled_day' | 'due_day'>): string | null {
+  if (t.scheduled_day && t.due_day) return t.scheduled_day < t.due_day ? t.scheduled_day : t.due_day;
+  return t.scheduled_day ?? t.due_day ?? null;
+}
+
+export function bucketOf(t: Pick<Task, 'scheduled_day' | 'due_day'>, todayDay: string): Bucket {
+  const d = effectiveDay(t);
+  if (d === null) return 'someday';
+  if (d < todayDay) return 'overdue';
+  if (d === todayDay) return 'today';
+  if (d === addDays(todayDay, 1)) return 'tomorrow';
+  if (d <= addDays(todayDay, 7)) return 'week';
+  return 'later';
+}
+
+const SOONEST = "coalesce(min(t.scheduled_day, t.due_day), t.scheduled_day, t.due_day)";
+
+/** Abiertas de primer nivel: prioridad alta primero, luego el día que manda, luego la más antigua. */
+export function listOpen(db: Database, project: Id | null = null): Task[] {
   const proj = project !== null ? `AND t.project_id = ${Number(project)}` : '';
-  const soonest = 'coalesce(min(t.scheduled_day, t.due_day), t.scheduled_day, t.due_day)';
-  let sql: string;
-  let bind: (string | number)[] = [];
-  switch (view) {
-    case 'today':
-      sql = `${SELECT} WHERE t.status = 'open' AND t.parent_id IS NULL ${proj}
-             AND ((t.scheduled_day IS NOT NULL AND t.scheduled_day <= ?1) OR (t.due_day IS NOT NULL AND t.due_day <= ?1))
-             ORDER BY t.priority DESC, coalesce(t.due_day, t.scheduled_day), t.created_at`;
-      bind = [todayDay];
-      break;
-    case 'upcoming':
-      sql = `${SELECT} WHERE t.status = 'open' AND t.parent_id IS NULL ${proj}
-             AND ${soonest} > ?1 AND ${soonest} <= ?2
-             ORDER BY ${soonest}, t.priority DESC, t.created_at`;
-      bind = [todayDay, week];
-      break;
-    case 'someday':
-      sql = `${SELECT} WHERE t.status = 'open' AND t.parent_id IS NULL ${proj}
-             AND t.scheduled_day IS NULL AND t.due_day IS NULL
-             ORDER BY t.priority DESC, t.created_at`;
-      break;
-    case 'done':
-      sql = `${SELECT} WHERE t.status != 'open' AND t.parent_id IS NULL ${proj}
-             ORDER BY t.completed_at DESC LIMIT 200`;
-      break;
-  }
-  return db.all<Row>(sql, bind).map(map);
+  return db
+    .all<Row>(`${SELECT} WHERE t.status = 'open' AND t.parent_id IS NULL ${proj}
+       ORDER BY t.priority DESC, coalesce(${SOONEST}, '9999'), t.created_at`)
+    .map(map);
+}
+
+export interface Group { bucket: Bucket; tasks: Task[] }
+
+/** Las abiertas por grupos, en orden de cercanía y sin grupos vacíos. */
+export function grouped(db: Database, todayDay: string, project: Id | null = null): Group[] {
+  const by = new Map<Bucket, Task[]>(BUCKETS.map((b) => [b, []]));
+  for (const t of listOpen(db, project)) by.get(bucketOf(t, todayDay))!.push(t);
+  return BUCKETS.map((bucket) => ({ bucket, tasks: by.get(bucket)! })).filter((g) => g.tasks.length > 0);
+}
+
+/** Lo de hoy: vencidas y previstas o con límite hoy, en ese orden (para la pantalla Hoy). */
+export function forToday(db: Database, todayDay: string): Task[] {
+  return listOpen(db).filter((t) => { const b = bucketOf(t, todayDay); return b === 'overdue' || b === 'today'; });
+}
+
+/** Lo de los próximos siete días (mañana incluido), para enseñarlo debajo de lo de hoy. */
+export function forNextDays(db: Database, todayDay: string): Task[] {
+  return listOpen(db)
+    .filter((t) => { const b = bucketOf(t, todayDay); return b === 'tomorrow' || b === 'week'; })
+    .sort((a, b) => effectiveDay(a)!.localeCompare(effectiveDay(b)!) || b.priority - a.priority || a.created_at - b.created_at);
+}
+
+/** Completadas o cerradas, las últimas primero. */
+export function listDone(db: Database, project: Id | null = null, limit = 200): Task[] {
+  const proj = project !== null ? `AND t.project_id = ${Number(project)}` : '';
+  return db.all<Row>(`${SELECT} WHERE t.status != 'open' AND t.parent_id IS NULL ${proj} ORDER BY t.completed_at DESC LIMIT ${Number(limit)}`).map(map);
 }
 
 /**
- * Tareas hechas o cerradas hoy que pertenecían a una vista, para dejarlas al final de la
- * lista en vez de hacerlas desaparecer al marcarlas. Nunca más de `limit`.
+ * Hechas o cerradas un día concreto, para dejarlas al final de la lista en vez de
+ * hacerlas desaparecer al marcarlas. Nunca más de `limit`.
  */
-export function doneToday(db: Database, view: View, todayDay: string, project: Id | null = null, limit = 10): Task[] {
-  if (view === 'done') return [];
-  const week = addDays(todayDay, 7);
+export function doneOn(db: Database, day: string, project: Id | null = null, limit = 10): Task[] {
   const proj = project !== null ? `AND t.project_id = ${Number(project)}` : '';
-  const soonest = 'coalesce(min(t.scheduled_day, t.due_day), t.scheduled_day, t.due_day)';
-  const where =
-    view === 'today' ? `AND ((t.scheduled_day IS NOT NULL AND t.scheduled_day <= ?1) OR (t.due_day IS NOT NULL AND t.due_day <= ?1))`
-    : view === 'upcoming' ? `AND ${soonest} > ?1 AND ${soonest} <= ?2`
-    : `AND t.scheduled_day IS NULL AND t.due_day IS NULL`;
-  const bind: (string | number)[] = view === 'upcoming' ? [todayDay, week, todayDay, limit] : view === 'today' ? [todayDay, todayDay, limit] : [todayDay, limit];
-  const i = view === 'upcoming' ? 3 : view === 'today' ? 2 : 1;
   return db
     .all<Row>(
-      `${SELECT} WHERE t.status != 'open' AND t.parent_id IS NULL ${proj} ${where}
-       AND t.completed_at IS NOT NULL AND date(t.completed_at, 'unixepoch', 'localtime') = ?${i}
-       ORDER BY t.completed_at DESC LIMIT ?${i + 1}`,
-      bind,
+      `${SELECT} WHERE t.status != 'open' AND t.parent_id IS NULL ${proj}
+       AND t.completed_at IS NOT NULL AND date(t.completed_at, 'unixepoch', 'localtime') = ?1
+       ORDER BY t.completed_at DESC LIMIT ?2`,
+      [day, limit],
     )
     .map(map);
 }

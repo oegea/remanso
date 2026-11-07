@@ -4,8 +4,10 @@
  *
  * Estructura de toda sesión: reflexión amable → gong → tres respiraciones profundas →
  * una parte de cuerpo (asentarse, recorrido o sonidos) → atención a la respiración (en
- * la nariz, en el vientre o contando) → gong → tres respiraciones → abrir los ojos. Las
- * variantes y las proporciones cambian con la semilla, para que ninguna sesión sea igual.
+ * la nariz, en el vientre o contando) → gong → abrir los ojos → tres respiraciones →
+ * despedida. Las variantes y las proporciones cambian con la semilla, para que ninguna
+ * sesión sea igual. Con voz, las fases con círculo empiezan por la explicación (`lead`)
+ * y el círculo aparece cuando la voz ha terminado de explicar cómo seguirlo.
  */
 import type { Database } from '../db/sqlite';
 import { rng } from '../audio/synth';
@@ -27,7 +29,14 @@ export interface Phase {
   steps: Step[];
   /** Si la fase pide los ojos cerrados. */
   eyesClosed: boolean;
+  /** Segundos iniciales en que se enseña la indicación (la voz explica) antes del círculo. */
+  lead?: number;
 }
+
+/** Segundos que tarda la voz en explicar el círculo al principio (la frase dura ~29 s). */
+export const DEEP_LEAD = 34;
+/** Segundos de la fase «abre los ojos» con voz (la frase dura ~25 s) y sin ella. */
+export const OPEN_VOICE = 30, OPEN_SILENT = 12;
 
 export const DURATIONS = [5, 10, 15, 20] as const;
 
@@ -62,11 +71,12 @@ function pick<T>(r: () => number, list: readonly T[]): T { return list[Math.floo
 function shuffle<T>(r: () => number, list: readonly T[]): T[] { const a = [...list]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 /** Plan de una sesión de `minutes` minutos. La misma semilla da el mismo plan (pruebas). */
-export function makePlan(minutes: number, seed = Date.now()): Phase[] {
+export function makePlan(minutes: number, seed = Date.now(), voice = true): Phase[] {
   const r = rng(seed);
   const total = minutes * 60;
   const intention = minutes <= 5 ? 30 : 45;
-  const deep = 30, closing = 30, open = 12;
+  const deepLead = voice ? DEEP_LEAD : 0;
+  const deep = 30 + deepLead, closing = 30, open = voice ? OPEN_VOICE : OPEN_SILENT;
   const main = total - intention - deep - closing - open;
   const bodyKind = pick(r, ['settle', 'scan', 'sounds'] as const);
   const bodyShare = bodyKind === 'scan' ? 0.4 + r() * 0.1 : 0.25 + r() * 0.15;
@@ -77,7 +87,7 @@ export function makePlan(minutes: number, seed = Date.now()): Phase[] {
   const phases: Phase[] = [];
   const intent = pick(r, INTENTIONS);
   phases.push({ kind: 'intention', title: 'Para empezar', seconds: intention, cue: intent[1], voice: intent[0], steps: [], eyesClosed: false });
-  phases.push({ kind: 'deep_breaths', title: 'Tres respiraciones profundas', seconds: deep, cue: 'Sigue el círculo: coge aire despacio cuando crece y suéltalo cuando se encoge. Tres veces.', voice: 'deep_breaths', steps: [], eyesClosed: false });
+  phases.push({ kind: 'deep_breaths', title: 'Tres respiraciones profundas', seconds: deep, lead: deepLead, cue: 'Cuando aparezca el círculo, coge aire despacio mientras crece y suéltalo mientras se encoge. Tres veces.', voice: 'deep_breaths', steps: [], eyesClosed: false });
   if (bodyKind === 'settle') {
     phases.push({ kind: 'settle', title: 'Asentarse', seconds: body, cue: 'Cierra los ojos. Respira con normalidad y nota el cuerpo sentado: el peso en el asiento, los pies en el suelo, las manos donde estén.', voice: 'settle', steps: [
       { at: Math.round(body * 0.35), text: 'Los pies en el suelo.', voice: 'settle_feet' },
@@ -99,8 +109,8 @@ export function makePlan(minutes: number, seed = Date.now()): Phase[] {
   const reminders = shuffle(r, REMINDERS).slice(0, Math.max(1, Math.min(4, Math.floor(breath / 75))));
   const every = breath / (reminders.length + 1);
   phases.push({ kind: 'breath', title: breathCue[0], seconds: breath, cue: breathCue[1], voice: breathCue[2], steps: reminders.map(([id, text], i) => ({ at: Math.round(every * (i + 1)), text, voice: id })), eyesClosed: true });
-  phases.push({ kind: 'closing_breaths', title: 'Para terminar', seconds: closing, cue: 'Tres respiraciones profundas más, siguiendo el círculo.', voice: 'closing', steps: [], eyesClosed: false });
-  phases.push({ kind: 'open_eyes', title: 'Abre los ojos', seconds: open, cue: 'Abre los ojos despacio. Mira alrededor. Tómate un momento antes de moverte.', voice: 'open_eyes', steps: [], eyesClosed: false });
+  phases.push({ kind: 'open_eyes', title: 'Para terminar', seconds: open, cue: 'Abre los ojos despacio. Mira alrededor. Cuando estés, tres respiraciones más siguiendo el círculo.', voice: 'closing', steps: [], eyesClosed: false });
+  phases.push({ kind: 'closing_breaths', title: 'Tres respiraciones', seconds: closing, cue: 'Coge aire mientras el círculo crece y suéltalo mientras se encoge. Tres veces.', steps: [], eyesClosed: false });
   return phases;
 }
 
@@ -129,6 +139,16 @@ export function start(db: Database, plan: Phase[], now: number): number {
 
 export function finish(db: Database, id: number, o: { now: number; doneSeconds: number; feeling: number | null; unpleasant: boolean; notes: string }): void {
   db.run('UPDATE meditation_sessions SET ended_at = ?2, done_seconds = ?3, feeling = ?4, unpleasant = ?5, notes = ?6 WHERE id = ?1', [id, o.now, Math.max(0, Math.round(o.doneSeconds)), o.feeling, o.unpleasant ? 1 : 0, o.notes.trim()]);
+}
+
+/** Las notas se pueden cambiar después; la duración, cómo te sentiste y la bandera, no. */
+export function setNotes(db: Database, id: number, notes: string): void {
+  db.run('UPDATE meditation_sessions SET notes = ?2 WHERE id = ?1', [id, notes.trim()]);
+}
+
+/** Borra una sesión (registro por error, prueba). Los totales se recalculan. */
+export function remove(db: Database, id: number): void {
+  db.run('DELETE FROM meditation_sessions WHERE id = ?1', [id]);
 }
 
 /** Sesiones terminadas (con hora de fin), las más recientes primero. */

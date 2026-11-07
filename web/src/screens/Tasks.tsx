@@ -4,7 +4,7 @@ import { session } from '../app/session';
 import { bumpData, useDataVersion } from '../app/useSession';
 import * as tk from '../domain/tasks';
 import * as rec from '../domain/recurrence';
-import { addDays, fmtDateCompact, fmtDateLong, parseDayInput, today, daysInMonth, parseDay, weekdayIndex, MONTHS, WEEKDAYS_INITIAL } from '../domain/dates';
+import { addDays, fmtDateCompact, fmtDateLong, fmtRelativeDays, parseDayInput, today, daysInMonth, parseDay, weekdayIndex, MONTHS, WEEKDAYS_INITIAL, WEEKDAYS_SHORT } from '../domain/dates';
 import { Topbar } from '../ui/Topbar';
 import { Icon } from '../ui/Icon';
 import { Prompt, Confirm, Choice, Sheet } from '../ui/Sheet';
@@ -13,39 +13,40 @@ import { TextEditor, useAutosave } from '../ui/Editor';
 import { T } from '../text/texts';
 import { HELP } from '../text/help';
 
-type Tab = 'today' | 'upcoming' | 'someday' | 'done' | 'projects' | 'calendar';
+type Tab = 'list' | 'calendar' | 'projects' | 'done';
 const TABS: { key: Tab; label: string; slug: string }[] = [
-  { key: 'today', label: T.TASKS_TODAY, slug: 'hoy' }, { key: 'upcoming', label: T.TASKS_UPCOMING, slug: 'proximas' }, { key: 'someday', label: T.TASKS_SOMEDAY, slug: 'sin-fecha' },
-  { key: 'done', label: T.TASKS_DONE, slug: 'hechas' }, { key: 'projects', label: T.TASKS_PROJECTS, slug: 'proyectos' }, { key: 'calendar', label: T.TASKS_CALENDAR, slug: 'calendario' },
+  { key: 'list', label: T.TASKS_LIST, slug: 'pendientes' }, { key: 'calendar', label: T.TASKS_CALENDAR, slug: 'calendario' },
+  { key: 'projects', label: T.TASKS_PROJECTS, slug: 'proyectos' }, { key: 'done', label: T.TASKS_DONE, slug: 'hechas' },
 ];
+/** Rutas antiguas (/tareas/hoy, /tareas/proximas, /tareas/sin-fecha) llevan a la lista única. */
+const tabFromSlug = (slug?: string): Tab | undefined => TABS.find((x) => x.slug === slug)?.key ?? (slug && ['hoy', 'proximas', 'sin-fecha'].includes(slug) ? 'list' : undefined);
 
-/** Tareas por vistas. La pestaña inicial puede venir en la ruta (/tareas/proyectos). */
+const BUCKET_LABEL: Record<tk.Bucket, string> = { overdue: T.TASKS_OVERDUE, today: T.TASKS_TODAY, tomorrow: T.TASKS_TOMORROW, week: T.TASKS_WEEK, later: T.TASKS_LATER, someday: T.TASKS_SOMEDAY };
+
+/**
+ * Tareas: una sola lista de lo pendiente agrupada por cercanía (vencidas, hoy, mañana,
+ * próximos siete días, más adelante, sin fecha). El día que manda es el más cercano entre
+ * el previsto y el límite, así ninguna tarea «desaparece» por tener sólo fecha límite.
+ * Calendario, Proyectos y Hechas son otras maneras de mirar lo mismo.
+ */
 export function Tasks() {
   const dataVersion = useDataVersion();
   const db = session.db!;
   const { tab: slug } = useParams<{ tab?: string }>();
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<Tab>(TABS.find((x) => x.slug === slug)?.key ?? 'today');
-  useEffect(() => { const k = TABS.find((x) => x.slug === slug)?.key; if (k) setTab(k); }, [slug]);
+  const [tab, setTab] = useState<Tab>(tabFromSlug(slug) ?? 'list');
+  useEffect(() => { const k = tabFromSlug(slug); if (k) setTab(k); }, [slug]);
   const [calDay, setCalDay] = useState(today());
   const [open, setOpen] = useState<tk.Task | null>(null);
   const [sheet, setSheet] = useState<null | 'new' | 'newProject'>(null);
   const t = today();
-  const tasks = useMemo(() => {
-    if (tab === 'projects') return [];
-    if (tab === 'calendar') return tk.onDay(db, calDay);
-    return tk.list(db, tab as tk.View, t);
-  }, [db, dataVersion, tab, calDay, t]);
+  const groups = useMemo(() => (tab === 'list' ? tk.grouped(db, t) : []), [db, dataVersion, tab, t]);
+  const dayTasks = useMemo(() => (tab === 'calendar' ? tk.onDay(db, calDay) : []), [db, dataVersion, tab, calDay]);
+  const done = useMemo(() => (tab === 'done' ? tk.listDone(db) : []), [db, dataVersion, tab]);
   const projects = useMemo(() => (tab === 'projects' ? tk.listProjects(db, true) : []), [db, dataVersion, tab]);
-  // Las hechas hoy se quedan al final de su vista (máximo 10) en vez de desaparecer al marcarlas.
-  const doneToday = useMemo(() => (tab === 'today' || tab === 'upcoming' || tab === 'someday') ? tk.doneToday(db, tab, t) : [], [db, dataVersion, tab, t]);
-
-  const defaultDay = tab === 'today' ? t : tab === 'upcoming' ? addDays(t, 1) : tab === 'calendar' ? calDay : null;
-  const createTask = (title: string) => {
-    if (!title.trim()) return;
-    tk.create(db, { title, scheduled_day: defaultDay, project_id: null });
-    bumpData();
-  };
+  // Las hechas hoy se quedan al final de la lista (máximo 10) en vez de desaparecer al marcarlas.
+  const doneToday = useMemo(() => (tab === 'list' ? tk.doneOn(db, t) : []), [db, dataVersion, tab, t]);
+  const total = groups.reduce((n, g) => n + g.tasks.length, 0);
 
   return (
     <div className="screen">
@@ -54,7 +55,28 @@ export function Tasks() {
         <div className="segments" role="tablist">
           {TABS.map((x) => <button key={x.key} role="tab" aria-selected={tab === x.key} className="segment" onClick={() => setTab(x.key)}>{x.label}</button>)}
         </div>
-        {tab === 'projects' ? (
+        {tab === 'list' && (
+          total === 0 ? (
+            <div className="empty"><p>{T.TASKS_EMPTY_LIST[0]}</p><p>{T.TASKS_EMPTY_LIST[1]}</p></div>
+          ) : (
+            <div className="stack-lg">
+              {groups.map((g) => (
+                <section key={g.bucket} aria-labelledby={`h-${g.bucket}`}>
+                  <h2 id={`h-${g.bucket}`} className={`list-head ${g.bucket === 'overdue' ? 'is-warn' : ''}`}>{BUCKET_LABEL[g.bucket]} <span className="t-faint num" aria-hidden="true">{g.tasks.length}</span></h2>
+                  {g.bucket === 'overdue' && <p className="t-foot t-muted" style={{ marginTop: -4, marginBottom: 6 }}>{HELP.TASKS_OVERDUE_HELP}</p>}
+                  <TaskList tasks={g.tasks} today={t} onOpen={setOpen} bucket={g.bucket} />
+                </section>
+              ))}
+            </div>
+          )
+        )}
+        {tab === 'calendar' && (
+          <>
+            <Calendar day={calDay} onPick={setCalDay} marks={tk.daysWithTasks(db, calDay.slice(0, 8) + '01', calDay.slice(0, 8) + daysInMonth(Number(calDay.slice(0, 4)), Number(calDay.slice(5, 7))))} />
+            {dayTasks.length === 0 ? <div className="empty"><p>Nada previsto ese día.</p></div> : <TaskList tasks={dayTasks} today={t} onOpen={setOpen} />}
+          </>
+        )}
+        {tab === 'projects' && (
           projects.length === 0 ? <div className="empty"><p>{T.TASKS_EMPTY_PROJECTS[0]}</p><p>{HELP.PROJECT_WHAT}</p></div> : (
             <div className="list">{projects.map((p) => (
               <button key={p.id} className="list-item" onClick={() => navigate(`/tareas/proyecto/${p.id}`)}>
@@ -63,22 +85,56 @@ export function Tasks() {
               </button>
             ))}</div>
           )
-        ) : tab === 'calendar' ? (
-          <Calendar day={calDay} onPick={setCalDay} marks={tk.daysWithTasks(db, calDay.slice(0, 8) + '01', calDay.slice(0, 8) + daysInMonth(Number(calDay.slice(0, 4)), Number(calDay.slice(5, 7))))} />
-        ) : null}
-        {tab !== 'projects' && (
-          tasks.length === 0 ? (
-            <div className="empty"><p>{tab === 'today' ? T.TASKS_EMPTY_TODAY[0] : tab === 'upcoming' ? T.TASKS_EMPTY_UPCOMING[0] : tab === 'someday' ? T.TASKS_EMPTY_SOMEDAY[0] : tab === 'calendar' ? 'Nada previsto ese día.' : T.TASKS_EMPTY_DONE[0]}</p></div>
-          ) : (
-            <TaskList tasks={tasks} today={t} onOpen={setOpen} showOverdue={tab === 'today'} />
-          )
         )}
-        <DoneSection tasks={doneToday} today={t} onOpen={setOpen} />
+        {tab === 'done' && (
+          done.length === 0 ? <div className="empty"><p>{T.TASKS_EMPTY_DONE[0]}</p></div> : <TaskList tasks={done} today={t} onOpen={setOpen} />
+        )}
+        {tab === 'list' && <DoneSection tasks={doneToday} today={t} onOpen={setOpen} />}
       </div>
-      <Prompt open={sheet === 'new'} onClose={() => setSheet(null)} title={T.TASK_TITLE_PROMPT} submitLabel="Añadir" help={defaultDay ? `Prevista para ${fmtDateCompact(defaultDay, t)}. Podrás cambiarlo.` : 'Sin fecha.'} onSubmit={createTask} />
+      <NewTaskSheet open={sheet === 'new'} onClose={() => setSheet(null)} today={t} initialDay={tab === 'calendar' ? calDay : t} onCreate={(title, day) => { tk.create(db, { title, scheduled_day: day, project_id: null }); bumpData(); }} />
       <Prompt open={sheet === 'newProject'} onClose={() => setSheet(null)} title={T.PROJECT_NAME_PROMPT} submitLabel="Crear" onSubmit={(v) => { if (v.trim()) { tk.createProject(db, v, null); bumpData(); } }} />
       {open && <TaskDetail task={open} onClose={() => setOpen(null)} />}
     </div>
+  );
+}
+
+/**
+ * Nueva tarea: el título y, debajo, «¿cuándo?» con fichas (hoy, mañana, sin fecha, otro
+ * día). Elegir un día es una invitación, no una exigencia: decidir cuándo descarga la
+ * cabeza (Masicampo y Baumeister, 2011) y hace más probable hacerlo (Gollwitzer, 1999).
+ */
+export function NewTaskSheet({ open, onClose, today: t, initialDay, onCreate, help }: { open: boolean; onClose: () => void; today: string; initialDay: string | null; onCreate: (title: string, day: string | null) => void; help?: string }) {
+  const [title, setTitle] = useState('');
+  const [day, setDay] = useState<string | null>(initialDay);
+  const [other, setOther] = useState('');
+  const [otherOn, setOtherOn] = useState(false);
+  useEffect(() => { if (open) { setTitle(''); setDay(initialDay); setOther(''); setOtherOn(false); } }, [open, initialDay]);
+  const tomorrow = addDays(t, 1);
+  const chips: [string, string | null][] = [['Hoy', t], ['Mañana', tomorrow], ['Sin fecha', null]];
+  const otherDay = otherOn ? (parseDayInput(other, t)?.day ?? null) : null;
+  const chosen = otherOn ? otherDay : day;
+  const submit = () => {
+    const v = title.trim();
+    if (!v) return;
+    if (otherOn && other.trim() && parseDayInput(other, t) === undefined) { announce(T.TASK_DATE_UNKNOWN); return; }
+    onCreate(v, chosen);
+    onClose();
+  };
+  return (
+    <Sheet open={open} onClose={onClose} title={T.TASK_TITLE_PROMPT} closeLabel="Cancelar" footer={<button className="btn btn-primary btn-block" disabled={!title.trim()} onClick={submit}>Añadir</button>}>
+      <div className="stack">
+        <input className="input prompt-input" aria-label={T.TASK_TITLE_LABEL_NEW} value={title} autoFocus onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} />
+        <div className="field">
+          <label>{T.TASK_WHEN}</label>
+          <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+            {chips.map(([label, d]) => <button key={label} type="button" className="chip" aria-pressed={!otherOn && day === d} onClick={() => { setOtherOn(false); setDay(d); }}>{label}</button>)}
+            <button type="button" className="chip" aria-pressed={otherOn} onClick={() => setOtherOn(true)}>Otro día</button>
+          </div>
+          {otherOn && <input className="input" style={{ marginTop: 8 }} aria-label="Qué día" placeholder="lun, +3, 20, 15/12" value={other} autoFocus onChange={(e) => setOther(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} />}
+          <span className="help">{help ?? (chosen ? `${T.TASK_WHEN_HELP_DAY} ${fmtDateCompact(chosen, t)}. ${T.TASK_WHEN_HELP_TAIL}` : `${T.TASK_WHEN_HELP_NONE} ${T.TASK_WHEN_HELP_TAIL}`)}</span>
+        </div>
+      </div>
+    </Sheet>
   );
 }
 
@@ -109,11 +165,11 @@ export function ProjectTasks() {
         {openTasks.length === 0 ? (
           <div className="empty"><p>{HELP.PROJECT_EMPTY[0]}</p><p>{HELP.PROJECT_EMPTY[1]}</p></div>
         ) : (
-          <TaskList tasks={openTasks} today={t} onOpen={setOpen} showOverdue />
+          <TaskList tasks={openTasks} today={t} onOpen={setOpen} />
         )}
         <DoneSection tasks={done} today={t} onOpen={setOpen} title={HELP.PROJECT_DONE_HEAD} />
       </div>
-      <Prompt open={sheet === 'new'} onClose={() => setSheet(null)} title={T.TASK_TITLE_PROMPT} submitLabel="Añadir" help={HELP.PROJECT_NEW_TASK_HELP.replace('{p}', project.name)} onSubmit={(v) => { if (v.trim()) { tk.create(db, { title: v, scheduled_day: null, project_id: project.id }); bumpData(); } }} />
+      <NewTaskSheet open={sheet === 'new'} onClose={() => setSheet(null)} today={t} initialDay={null} help={HELP.PROJECT_NEW_TASK_HELP.replace('{p}', project.name)} onCreate={(title, day) => { tk.create(db, { title, scheduled_day: day, project_id: project.id }); bumpData(); }} />
       <Sheet open={sheet === 'options'} onClose={() => setSheet(null)} title={HELP.PROJECT_OPTIONS}>
         <div className="list">
           <button className="list-item" onClick={() => setSheet('rename')}><Icon name="edit" className="t-muted" /><span className="grow">{HELP.PROJECT_RENAME}</span><Icon name="forward" className="t-faint" /></button>
@@ -130,8 +186,8 @@ export function ProjectTasks() {
   );
 }
 
-function TaskList({ tasks, today: t, onOpen, showOverdue }: { tasks: tk.Task[]; today: string; onOpen: (task: tk.Task) => void; showOverdue: boolean }) {
-  return <div className="list">{tasks.map((task) => <TaskRow key={task.id} task={task} today={t} onOpen={() => onOpen(task)} showOverdue={showOverdue} />)}</div>;
+export function TaskList({ tasks, today: t, onOpen, bucket, muted }: { tasks: tk.Task[]; today: string; onOpen: (task: tk.Task) => void; bucket?: tk.Bucket; muted?: boolean }) {
+  return <div className={`list ${muted ? 'list-done' : ''}`} style={muted ? { opacity: 0.8 } : undefined}>{tasks.map((task) => <TaskRow key={task.id} task={task} today={t} onOpen={() => onOpen(task)} bucket={bucket} />)}</div>;
 }
 
 function DoneSection({ tasks, today: t, onOpen, title = HELP.TASKS_DONE_TODAY }: { tasks: tk.Task[]; today: string; onOpen: (task: tk.Task) => void; title?: string }) {
@@ -139,17 +195,37 @@ function DoneSection({ tasks, today: t, onOpen, title = HELP.TASKS_DONE_TODAY }:
   return (
     <section aria-labelledby="h-done-today" style={{ marginTop: 8 }}>
       <h2 id="h-done-today" className="list-head">{title}</h2>
-      <div className="list list-done" style={{ opacity: 0.75 }}>{tasks.map((task) => <TaskRow key={task.id} task={task} today={t} onOpen={() => onOpen(task)} showOverdue={false} />)}</div>
+      <div className="list list-done" style={{ opacity: 0.75 }}>{tasks.map((task) => <TaskRow key={task.id} task={task} today={t} onOpen={() => onOpen(task)} />)}</div>
     </section>
   );
+}
+
+/** Día de la semana y número: «jue 12». */
+const fmtWeekday = (day: string) => `${WEEKDAYS_SHORT[weekdayIndex(day)]} ${fmtDateCompact(day)}`;
+
+/**
+ * Lo que se lee bajo el título: el día previsto cuando no es hoy, la fecha límite como
+ * aviso (en ámbar si es hoy, mañana o ya pasó), la repetición, las subtareas y los
+ * aplazamientos. La fecha límite nunca cambia de grupo a la tarea: sólo avisa.
+ */
+export function taskMeta(task: tk.Task, t: string, bucket?: tk.Bucket): { text: string; warn?: boolean }[] {
+  const out: { text: string; warn?: boolean }[] = [];
+  const rel = (d: string) => (d === t ? 'hoy' : d === addDays(t, 1) ? 'mañana' : d < t ? `${fmtDateCompact(d, t)} (${fmtRelativeDays(d, t)})` : d <= addDays(t, 7) ? fmtWeekday(d) : fmtDateCompact(d, t));
+  if (task.scheduled_day && task.scheduled_day !== t && !(bucket === 'tomorrow' && task.scheduled_day === addDays(t, 1))) out.push({ text: task.scheduled_day < t ? `${T.TASK_PLANNED} ${rel(task.scheduled_day)}` : rel(task.scheduled_day) });
+  if (task.due_day) out.push({ text: `${T.TASK_DUE_LABEL} ${rel(task.due_day)}`, warn: task.status === 'open' && task.due_day <= addDays(t, 1) });
+  if (task.recurrence) out.push({ text: rec.describe(task.recurrence) });
+  if (task.subtasks_total > 0) out.push({ text: `${task.subtasks_done}/${task.subtasks_total}` });
+  if (task.postpone_count >= tk.POSTPONE_REVIEW_THRESHOLD) out.push({ text: `${T.TASK_POSTPONED_TIMES} ${task.postpone_count}×` });
+  return out;
 }
 
 /**
  * Fila de tarea. Al marcarla, el cambio se guarda al momento pero la fila se queda en su
  * sitio un instante: se tacha, se atenúa y se pliega; sólo entonces se refresca la lista y
- * reaparece al final, bajo «Hechas hoy». Así no «se esfuma» (DESIGN.md §3.4).
+ * reaparece al final, bajo «Hechas hoy». Así no «se esfuma» (DESIGN.md §3.4). En el grupo
+ * de vencidas hay un atajo «A hoy» para replanificar con un toque, sin pasar por la ficha.
  */
-function TaskRow({ task, today: t, onOpen, showOverdue }: { task: tk.Task; today: string; onOpen: () => void; showOverdue: boolean }) {
+export function TaskRow({ task, today: t, onOpen, bucket }: { task: tk.Task; today: string; onOpen: () => void; bucket?: tk.Bucket }) {
   const db = session.db!;
   const [phase, setPhase] = useState<null | 'struck' | 'leaving'>(null);
   const timers = useRef<number[]>([]);
@@ -166,15 +242,7 @@ function TaskRow({ task, today: t, onOpen, showOverdue }: { task: tk.Task; today
   };
   // Mientras la fila se despide, muestra ya el estado nuevo.
   const done = phase ? task.status === 'open' : task.status !== 'open';
-  const meta: string[] = [];
-  if (task.scheduled_day) {
-    if (showOverdue && task.scheduled_day < t) meta.push(`${T.TASK_PENDING} (${fmtDateCompact(task.scheduled_day, t)})`);
-    else if (task.scheduled_day !== t) meta.push(fmtDateCompact(task.scheduled_day, t));
-  }
-  if (task.due_day) meta.push(`límite ${fmtDateCompact(task.due_day, t)}`);
-  if (task.recurrence) meta.push(rec.describe(task.recurrence));
-  if (task.subtasks_total > 0) meta.push(`${task.subtasks_done}/${task.subtasks_total}`);
-  if (task.postpone_count >= tk.POSTPONE_REVIEW_THRESHOLD) meta.push(`${T.TASK_POSTPONED_TIMES} ${task.postpone_count}×`);
+  const meta = taskMeta(task, t, bucket);
   return (
     <div className={`task-wrap ${phase === 'leaving' ? 'is-leaving' : ''}`}>
       <div>
@@ -185,10 +253,13 @@ function TaskRow({ task, today: t, onOpen, showOverdue }: { task: tk.Task; today
           <button className="grow row" style={{ textAlign: 'left', minHeight: 44, color: 'inherit' }} onClick={onOpen} aria-label={`Abrir ${task.title}`}>
             <span className="grow">
               <span className={`task-title ${done ? 'is-struck' : ''}`}>{task.priority === 1 && <Icon name="forward" size={12} style={{ transform: 'rotate(-90deg)', color: 'var(--warn)' }} aria-label="prioridad alta" />} {task.title}</span>
-              {meta.length > 0 && <span className="meta" style={{ display: 'block' }}>{meta.join(' · ')}</span>}
+              {meta.length > 0 && <span className="meta" style={{ display: 'block' }}>{meta.map((m, i) => <span key={m.text} style={m.warn ? { color: 'var(--warn)' } : undefined}>{i > 0 ? ' · ' : ''}{m.text}</span>)}</span>}
             </span>
             <Icon name="forward" className="t-faint" />
           </button>
+          {bucket === 'overdue' && task.status === 'open' && !phase && (
+            <button className="btn btn-text" style={{ flexShrink: 0 }} aria-label={`${task.title}: ${T.TASK_TO_TODAY_LABEL}`} onClick={() => { tk.postpone(db, task.id, t); bumpData(); announce(T.TASK_MOVED_TODAY); }}>{T.TASK_TO_TODAY}</button>
+          )}
         </div>
       </div>
     </div>
@@ -249,7 +320,7 @@ function FieldRow({ label, value, onClick, icon }: { label: string; value: strin
  * (día, límite, repetición, proyecto, prioridad), las notas, las subtareas y, al final,
  * cerrar sin hacer o borrar. Las acciones del día a día (Hecha, Aplazar) van en el pie.
  */
-function TaskDetail({ task: initial, onClose }: { task: tk.Task; onClose: () => void }) {
+export function TaskDetail({ task: initial, onClose }: { task: tk.Task; onClose: () => void }) {
   useDataVersion();
   const db = session.db!;
   const task = tk.get(db, initial.id) ?? initial;

@@ -8,7 +8,7 @@ defecto. Las pantallas se nombran como en la barra de navegación.
 |---|---|---|
 | Entrada de diario (texto, título, etiquetas) | Diario (lista por días) · Buscar · Hoy («última entrada») | |
 | Nota de cuaderno | Cuadernos → cuaderno → nota · Buscar | |
-| Tarea (título, notas, fechas, prioridad, repetición, proyecto) | Tareas → Hoy / Próximas / Algún día / Calendario · ficha de la tarea | Las hechas hoy se quedan al final de su vista (máx. 10); todas en «Hechas» |
+| Tarea (título, notas, fechas, prioridad, repetición, proyecto) | Tareas → Pendientes (una lista por cercanía: días anteriores, hoy, mañana, siete días, más adelante, sin fecha) / Calendario / Proyectos · ficha de la tarea · Hoy («Tareas de hoy» y «Próximos días») | El día que manda es el más cercano entre previsto y límite; las hechas hoy se quedan al final de la lista (máx. 10); todas en «Hechas» |
 | Tarea hecha o cerrada (y su motivo de cierre) | Tareas → Hechas · ficha | |
 | Revisión de tarea aplazada (primer paso, qué falta) | Se convierte en subtarea / tarea nueva · ficha de la tarea | |
 | Proyecto | Tareas → Proyectos (abiertas · hechas) → pantalla del proyecto: sus tareas abiertas, las hechas al final, opciones (nombre, archivo, borrar) | |

@@ -6,20 +6,33 @@ import * as tasks from './tasks';
 import { POSTPONE_REVIEW_THRESHOLD } from './tasks';
 
 describe('tareas', () => {
-  it('vistas y aplazamiento', async () => {
+  it('una lista por cercanía y aplazamiento', async () => {
     const db = await Database.create(() => {});
     const t = '2026-11-05';
     const a = tasks.create(db, { title: 'Llamar al médico', scheduled_day: '2026-11-03' });
     const b = tasks.create(db, { title: 'Comprar pan', scheduled_day: t });
-    tasks.create(db, { title: 'Leer informe', scheduled_day: '2026-11-09' });
+    const c = tasks.create(db, { title: 'Leer informe', scheduled_day: '2026-11-09' });
     const s = tasks.create(db, { title: 'Aprender a dibujar' });
+    const m = tasks.create(db, { title: 'Pedir cita', scheduled_day: '2026-11-06' });
+    const l = tasks.create(db, { title: 'Renovar el pasaporte', due_day: '2026-12-20' });
+    const d = tasks.create(db, { title: 'Entregar memoria', scheduled_day: '2026-11-20', due_day: t });
     tasks.setPriority(db, b, 1);
 
-    const td = tasks.list(db, 'today', t, null);
-    expect(td.map((x) => x.id), 'prioridad primero; la vencida sigue siendo pendiente').toEqual([b, a]);
-    expect(tasks.list(db, 'upcoming', t, null).length).toBe(1);
-    expect(tasks.list(db, 'someday', t, null)[0].id).toBe(s);
-    expect(tasks.countPending(db, t)).toBe(2);
+    const g = tasks.grouped(db, t);
+    expect(g.map((x) => x.bucket)).toEqual(['overdue', 'today', 'tomorrow', 'week', 'later', 'someday']);
+    const ids = Object.fromEntries(g.map((x) => [x.bucket, x.tasks.map((y) => y.id)]));
+    expect(ids.overdue).toEqual([a]);
+    expect(ids.today, 'prioridad primero; el límite de hoy manda sobre el día previsto').toEqual([b, d]);
+    expect(ids.tomorrow).toEqual([m]);
+    expect(ids.week).toEqual([c]);
+    expect(ids.later, 'con sólo fecha límite lejana no se pierde').toEqual([l]);
+    expect(ids.someday).toEqual([s]);
+    expect(tasks.forToday(db, t).map((x) => x.id)).toEqual([b, a, d]);
+    expect(tasks.forNextDays(db, t).map((x) => x.id), 'por día, no por prioridad').toEqual([m, c]);
+    expect(tasks.countPending(db, t)).toBe(3);
+    expect(tasks.effectiveDay({ scheduled_day: null, due_day: null })).toBeNull();
+    expect(tasks.bucketOf({ scheduled_day: '2026-11-12', due_day: null }, t)).toBe('week');
+    expect(tasks.bucketOf({ scheduled_day: '2026-11-13', due_day: null }, t)).toBe('later');
 
     let n = 0;
     for (let i = 0; i < 3; i++) n = tasks.postpone(db, a, '2026-11-10');
@@ -28,7 +41,7 @@ describe('tareas', () => {
     expect(a2.postpone_count).toBe(3);
     expect(a2.scheduled_day).toBe('2026-11-10');
     expect(tasks.postponedOften(db, POSTPONE_REVIEW_THRESHOLD).length).toBe(1);
-    expect(tasks.list(db, 'today', t, null).length).toBe(1);
+    expect(tasks.grouped(db, t).find((x) => x.bucket === 'overdue')).toBeUndefined();
   });
 
   it('completar una recurrente crea la siguiente', async () => {
@@ -43,7 +56,7 @@ describe('tareas', () => {
     expect(n.due_day).toBeNull();
     expect(n.recurrence).toEqual(every(3, 'days'));
     expect(tasks.get(db, id)!.status).toBe('done');
-    expect(tasks.list(db, 'done', t, null).length).toBe(1);
+    expect(tasks.listDone(db).length).toBe(1);
     tasks.reopen(db, id);
     expect(tasks.get(db, id)!.status).toBe('open');
   });
@@ -116,21 +129,18 @@ describe('tareas', () => {
   });
 });
 
-describe('hechas hoy por vista', () => {
-  it('se quedan al final de su vista, nunca más de diez', async () => {
+describe('hechas hoy', () => {
+  it('se quedan al final de la lista, nunca más de diez', async () => {
     const db = await Database.create(() => {});
     const t = today();
     const a = tasks.create(db, { title: 'Hoy hecha', scheduled_day: t });
     const b = tasks.create(db, { title: 'Hoy abierta', scheduled_day: t });
     const c = tasks.create(db, { title: 'Sin fecha hecha', scheduled_day: null });
-    const d = tasks.create(db, { title: 'Próxima hecha', scheduled_day: addDays(t, 2) });
-    tasks.complete(db, a); tasks.complete(db, c); tasks.complete(db, d);
-    expect(tasks.doneToday(db, 'today', t).map((x) => x.id)).toEqual([a]);
-    expect(tasks.doneToday(db, 'someday', t).map((x) => x.id)).toEqual([c]);
-    expect(tasks.doneToday(db, 'upcoming', t).map((x) => x.id)).toEqual([d]);
-    expect(tasks.doneToday(db, 'done', t)).toEqual([]);
-    expect(tasks.list(db, 'today', t).map((x) => x.id)).toEqual([b]);
+    tasks.complete(db, a); tasks.complete(db, c);
+    expect(tasks.doneOn(db, t).map((x) => x.id).sort()).toEqual([a, c].sort());
+    expect(tasks.doneOn(db, addDays(t, -1))).toEqual([]);
+    expect(tasks.listOpen(db).map((x) => x.id)).toEqual([b]);
     for (let i = 0; i < 12; i++) tasks.complete(db, tasks.create(db, { title: `t${i}`, scheduled_day: t }));
-    expect(tasks.doneToday(db, 'today', t)).toHaveLength(10);
+    expect(tasks.doneOn(db, t)).toHaveLength(10);
   });
 });
