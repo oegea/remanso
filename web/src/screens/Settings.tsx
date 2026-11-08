@@ -9,6 +9,7 @@ import { Icon } from '../ui/Icon';
 import { Sheet, Confirm } from '../ui/Sheet';
 import * as bio from '../crypto/biometric';
 import * as sup from '../domain/support';
+import { SupportSheet } from './Support';
 import { BiometricCancelled, BiometricUnavailable, methodName } from '../crypto/biometric';
 import { announce } from '../ui/Live';
 import { T } from '../text/texts';
@@ -30,7 +31,7 @@ type Technique = { clave: string; nombre: string; experimental: boolean; confian
 export function Settings() {
   const s = useSession();
   const [, navigate] = useLocation();
-  const [sheet, setSheet] = useState<null | 'password' | 'restore' | 'export' | 'wipe' | 'about' | 'help' | 'techniques' | 'supervised' | 'biometric'>(null);
+  const [sheet, setSheet] = useState<null | 'password' | 'restore' | 'export' | 'wipe' | 'about' | 'help' | 'techniques' | 'supervised' | 'biometric' | 'support'>(null);
   const [agree, setAgree] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [tech, setTech] = useState<Technique | null>(null);
@@ -120,16 +121,17 @@ export function Settings() {
 
         {sup.enabled() && (
           <Group title="Apoyar Remanso">
-            <a className="list-item" href={sup.SUPPORT_URL} target="_blank" rel="noopener noreferrer">
-              <span className="grow"><span>{HELP.SUPPORT_SETTINGS}</span><span className="meta" style={{ display: 'block', color: 'var(--ink-2)' }}>{HELP.SUPPORT_SETTINGS_HELP} {HELP.SUPPORT_OPENS}</span></span>
+            <button className="list-item" onClick={() => setSheet('support')}>
+              <span className="grow"><span>{HELP.SUPPORT_SETTINGS}</span><span className="meta" style={{ display: 'block', color: 'var(--ink-2)' }}>{HELP.SUPPORT_SETTINGS_HELP}</span></span>
               <Icon name="forward" className="t-faint" />
-            </a>
+            </button>
           </Group>
         )}
       </div>
 
       <ChangePassword open={sheet === 'password'} onClose={() => setSheet(null)} />
       <BiometricEnroll open={sheet === 'biometric'} onClose={() => setSheet(null)} />
+      <SupportSheet open={sheet === 'support'} onClose={() => setSheet(null)} />
       <Sheet open={sheet === 'restore'} onClose={() => setSheet(null)} title="Restaurar" closeLabel="Cancelar">
         <RestoreForm blob={null} setBlob={() => {}} onBack={() => setSheet(null)} onDone={() => { setSheet(null); announce('Copia restaurada.'); }} />
       </Sheet>

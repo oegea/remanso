@@ -13,6 +13,7 @@ import * as imp from '../domain/impulses';
 import * as sup from '../domain/support';
 import { Answers } from './Review';
 import { TaskDetail, TaskList } from './Tasks';
+import { SupportSheet } from './Support';
 import { HELP } from '../text/help';
 import { fmtDateLong, fmtRelativeDays, fmtDateCompact, fmtTime, today, nowTs, tsToDay, weekStart } from '../domain/dates';
 import { Icon } from '../ui/Icon';
@@ -61,6 +62,7 @@ export function Today() {
   }, [db, dataVersion, t, now]);
 
   const [openTask, setOpenTask] = useState<tk.Task | null>(null);
+  const [support, setSupport] = useState(false);
   const write = () => {
     const id = diary.create(db);
     bumpData();
@@ -174,7 +176,7 @@ export function Today() {
             <h2 id="h-support" className="t-lead" style={{ fontWeight: 600 }}>{HELP.SUPPORT_TITLE}</h2>
             {HELP.SUPPORT_BODY.map((p) => <p key={p} className="t-muted">{p}</p>)}
             <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-              <a className="btn btn-primary" href={sup.SUPPORT_URL} target="_blank" rel="noopener noreferrer" onClick={() => { sup.later(db, now); bumpData(); }}>{HELP.SUPPORT_GO}</a>
+              <button className="btn btn-primary" onClick={() => setSupport(true)}>{HELP.SUPPORT_GO}</button>
               <button className="btn btn-text" onClick={() => { sup.later(db, now); bumpData(); }}>{HELP.SUPPORT_LATER}</button>
               <button className="btn btn-text" onClick={() => { sup.never(db); bumpData(); announce('Entendido. No volverá a aparecer; el enlace queda en Ajustes.'); }}>{HELP.SUPPORT_NEVER}</button>
             </div>
@@ -186,6 +188,7 @@ export function Today() {
       </div>
       <Link href="/impulso" className="fab" aria-label="Abrir Impulso"><Icon name="impulse" /> Impulso</Link>
       {openTask && <TaskDetail task={openTask} onClose={() => setOpenTask(null)} />}
+      <SupportSheet open={support} onClose={() => setSupport(false)} />
     </div>
   );
 }
