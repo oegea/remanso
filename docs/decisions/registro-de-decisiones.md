@@ -474,8 +474,8 @@ la evidencia manda.
   apoyo fuera de la aplicación, sin incrustar nada de terceros), «Más adelante» (siete días
   sin tarjeta; también al pulsar el enlace) y «No volver a mostrar» (definitivo). Las
   marcas viven en la base cifrada (`settings`: `support_first_use`, `support_next_at`,
-  `support_dismissed`), así sobreviven a restaurar una copia. En Ajustes, abajo del todo,
-  el enlace está siempre. El texto dice lo que es: un regalo hecho con la convicción de que
+  `support_dismissed`), así sobreviven a restaurar una copia. En «Más», al final, está siempre
+  «Apoyar Remanso», que abre la misma hoja. El texto dice lo que es: un regalo hecho con la convicción de que
   una herramienta para cuidarse no puede vivir de tu atención; que lo mejor que se puede
   hacer es pasarlo; que el café paga infraestructura y desarrollo con los mismos valores;
   y que no desbloquea nada. Sin el enlace configurado (`SUPPORT_URL` en

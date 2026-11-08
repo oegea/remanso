@@ -63,8 +63,6 @@ export const HELP = {
   SUPPORT_GO: '¡Te invito a un café!',
   SUPPORT_LATER: 'Más adelante',
   SUPPORT_NEVER: 'No volver a mostrar',
-  SUPPORT_SETTINGS: 'Invitar a un café',
-  SUPPORT_SETTINGS_HELP: 'Remanso es gratis y lo seguirá siendo. Un café ayuda a sostener la infraestructura y el desarrollo con los valores con los que nació; no desbloquea nada.',
   SUPPORT_OPENS: 'Se abre fuera de Remanso, en Ko-fi.',
   TODAY_CARD_START: 'Empezar',
   TODAY_CARD_LATER: 'Ahora no',
