@@ -20,7 +20,15 @@ describe('plan de sesión', () => {
         expect(med.planSeconds(silent)).toBe(m * 60);
         expect(silent[1]).toMatchObject({ seconds: 30, lead: 0 });
         expect(silent[4].seconds).toBe(med.OPEN_SILENT);
-        for (const p of plan) { expect(p.seconds).toBeGreaterThan(0); for (const s of p.steps) expect(s.at).toBeLessThan(p.seconds); }
+        for (const p of plan) {
+          expect(p.seconds).toBeGreaterThan(0);
+          let prev = p.voice ? med.VOICE_INTRO_S : 0;
+          for (const s of p.steps) {
+            expect(s.at, `${m} min, semilla ${seed}, ${p.kind}: ningún paso antes de que la voz acabe`).toBeGreaterThanOrEqual(prev);
+            expect(s.at + med.VOICE_FIT_S, 'la frase del paso cabe en su parte').toBeLessThanOrEqual(p.seconds);
+            prev = s.at + med.VOICE_STEP_S;
+          }
+        }
       }
     }
   });
@@ -33,6 +41,16 @@ describe('plan de sesión', () => {
     expect(kinds.size).toBe(3);
     expect(cues.size).toBeGreaterThan(3);
     expect(breaths.size).toBe(3);
+  });
+  it('con voz, el recorrido del cuerpo sólo entra cuando caben la explicación y tres regiones', () => {
+    const short = new Set<string>();
+    for (let seed = 1; seed <= 40; seed++) short.add(med.makePlan(5, seed, true)[2].kind);
+    expect(short.has('scan')).toBe(false);
+    const silent = new Set<string>();
+    for (let seed = 1; seed <= 40; seed++) silent.add(med.makePlan(5, seed, false)[2].kind);
+    expect(silent.has('scan')).toBe(true);
+    const long = med.makePlan(20, 3, true);
+    if (long[2].kind === 'scan') expect(long[2].steps.length).toBe(6);
   });
   it('es determinista con la misma semilla', () => {
     expect(med.makePlan(15, 7)).toEqual(med.makePlan(15, 7));

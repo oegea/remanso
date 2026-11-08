@@ -33,8 +33,16 @@ export interface Phase {
   lead?: number;
 }
 
-/** Segundos que tarda la voz en explicar el círculo al principio (la frase dura ~29 s). */
+/** Segundos que tarda la voz en explicar el círculo al principio (la frase dura ~31 s). */
 export const DEEP_LEAD = 34;
+/**
+ * Lo que dura la voz, con margen, para que ningún paso empiece mientras la frase anterior
+ * sigue sonando (la sesión nunca corta una frase: si hace falta, la parte se alarga).
+ * INTRO: la explicación de cada parte (~27–40 s). STEP: un paso o recordatorio (~9–16 s).
+ */
+export const VOICE_INTRO_S = 42, VOICE_STEP_S = 20;
+/** Un paso sólo entra si empieza al menos esto antes del final de su parte (lo que dura la frase). */
+export const VOICE_FIT_S = 16;
 /** Segundos de la fase «abre los ojos» con voz (la frase dura ~25 s) y sin ella. */
 export const OPEN_VOICE = 30, OPEN_SILENT = 12;
 
@@ -78,9 +86,13 @@ export function makePlan(minutes: number, seed = Date.now(), voice = true): Phas
   const deepLead = voice ? DEEP_LEAD : 0;
   const deep = 30 + deepLead, closing = 30, open = voice ? OPEN_VOICE : OPEN_SILENT;
   const main = total - intention - deep - closing - open;
-  const bodyKind = pick(r, ['settle', 'scan', 'sounds'] as const);
+  const intro = voice ? VOICE_INTRO_S : 0, step = voice ? VOICE_STEP_S : 0;
+  // Con voz, el recorrido del cuerpo necesita sitio para la explicación y al menos tres regiones.
+  const scanFits = main * 0.4 >= intro + 3 * step;
+  const bodyKind = pick(r, scanFits ? (['settle', 'scan', 'sounds'] as const) : (['settle', 'sounds'] as const));
   const bodyShare = bodyKind === 'scan' ? 0.4 + r() * 0.1 : 0.25 + r() * 0.15;
-  const body = Math.round(main * bodyShare);
+  // Con voz, la parte de cuerpo tiene al menos sitio para la explicación y un paso.
+  const body = Math.max(Math.round(main * bodyShare), Math.min(intro + step + 4, Math.round(main * 0.5)));
   const breath = main - body;
   const breathKind = pick(r, ['nose', 'belly', 'count'] as const);
 
@@ -89,16 +101,21 @@ export function makePlan(minutes: number, seed = Date.now(), voice = true): Phas
   phases.push({ kind: 'intention', title: 'Para empezar', seconds: intention, cue: intent[1], voice: intent[0], steps: [], eyesClosed: false });
   phases.push({ kind: 'deep_breaths', title: 'Tres respiraciones profundas', seconds: deep, lead: deepLead, cue: 'Cuando aparezca el círculo, coge aire despacio mientras crece y suéltalo mientras se encoge. Tres veces.', voice: 'deep_breaths', steps: [], eyesClosed: false });
   if (bodyKind === 'settle') {
+    const feet = Math.max(intro, Math.round(body * 0.35));
+    const hands = Math.max(feet + step, Math.round(body * 0.65));
     phases.push({ kind: 'settle', title: 'Asentarse', seconds: body, cue: 'Cierra los ojos. Respira con normalidad y nota el cuerpo sentado: el peso en el asiento, los pies en el suelo, las manos donde estén.', voice: 'settle', steps: [
-      { at: Math.round(body * 0.35), text: 'Los pies en el suelo.', voice: 'settle_feet' },
-      { at: Math.round(body * 0.65), text: 'Las manos, donde descansen.', voice: 'settle_hands' },
+      { at: feet, text: 'Los pies en el suelo.', voice: 'settle_feet' },
+      ...(hands + step <= body ? [{ at: hands, text: 'Las manos, donde descansen.', voice: 'settle_hands' as VoiceId }] : []),
     ], eyesClosed: true });
   } else if (bodyKind === 'scan') {
-    const n = SCAN_REGIONS.length;
-    phases.push({ kind: 'scan', title: 'Un recorrido por el cuerpo', seconds: body, cue: 'Cierra los ojos y respira con normalidad. Vamos a recorrer el cuerpo despacio, de los pies a la cara, sólo notando lo que hay.', voice: 'scan', steps: SCAN_REGIONS.map(([, text], i) => ({ at: Math.round((body / n) * i) + (i === 0 ? 10 : 0), text, voice: `scan_${i + 1}` as VoiceId })), eyesClosed: true });
+    // Tantas regiones como quepan tras la explicación, repartidas de los pies a la cara.
+    const n = Math.max(3, Math.min(SCAN_REGIONS.length, Math.floor((body - intro) / Math.max(step, 15))));
+    const chosen = n >= SCAN_REGIONS.length ? SCAN_REGIONS.map((_, i) => i) : Array.from({ length: n }, (_, i) => Math.round((i * (SCAN_REGIONS.length - 1)) / (n - 1)));
+    const gap = (body - intro) / n;
+    phases.push({ kind: 'scan', title: 'Un recorrido por el cuerpo', seconds: body, cue: 'Cierra los ojos y respira con normalidad. Vamos a recorrer el cuerpo despacio, de los pies a la cara, sólo notando lo que hay.', voice: 'scan', steps: chosen.map((ri, i) => ({ at: Math.round(intro + gap * i) + (!voice && i === 0 ? 10 : 0), text: SCAN_REGIONS[ri][1], voice: `scan_${ri + 1}` as VoiceId })), eyesClosed: true });
   } else {
     phases.push({ kind: 'sounds', title: 'Los sonidos', seconds: body, cue: 'Cierra los ojos. Deja que lleguen los sonidos de alrededor, cercanos y lejanos, sin ir a buscarlos ni ponerles nombre.', voice: 'sounds', steps: [
-      { at: Math.round(body * 0.5), text: 'Los sonidos aparecen y desaparecen solos.', voice: 'sounds_step' },
+      { at: Math.max(intro, Math.round(body * 0.5)), text: 'Los sonidos aparecen y desaparecen solos.', voice: 'sounds_step' },
     ], eyesClosed: true });
   }
   const breathCue: [string, string, VoiceId] = breathKind === 'nose'
@@ -106,9 +123,11 @@ export function makePlan(minutes: number, seed = Date.now(), voice = true): Phas
     : breathKind === 'belly'
       ? ['La respiración', 'Lleva ahora la atención al vientre, que sube al coger aire y baja al soltarlo. Sin cambiar el ritmo. Ese es tu punto de apoyo.', 'breath_belly']
       : ['La respiración', 'Lleva ahora la atención a la respiración y cuenta cada espiración: uno, dos… hasta diez, y vuelve a empezar. Si te pierdes, empieza en uno, sin más.', 'breath_count'];
-  const reminders = shuffle(r, REMINDERS).slice(0, Math.max(1, Math.min(4, Math.floor(breath / 75))));
-  const every = breath / (reminders.length + 1);
-  phases.push({ kind: 'breath', title: breathCue[0], seconds: breath, cue: breathCue[1], voice: breathCue[2], steps: reminders.map(([id, text], i) => ({ at: Math.round(every * (i + 1)), text, voice: id })), eyesClosed: true });
+  const reminders = shuffle(r, REMINDERS).slice(0, Math.max(1, Math.min(4, Math.floor((breath - intro) / 75))));
+  const every = (breath - intro) / (reminders.length + 1);
+  phases.push({ kind: 'breath', title: breathCue[0], seconds: breath, cue: breathCue[1], voice: breathCue[2], steps: reminders.map(([id, text], i) => ({ at: Math.round(intro + every * (i + 1)), text, voice: id })), eyesClosed: true });
+  // Ningún paso empieza tan tarde que su frase no quepa en la parte.
+  for (const p of phases) p.steps = p.steps.filter((st) => st.at + (voice ? VOICE_FIT_S : 1) <= p.seconds);
   phases.push({ kind: 'open_eyes', title: 'Para terminar', seconds: open, cue: 'Abre los ojos despacio. Mira alrededor. Cuando estés, tres respiraciones más siguiendo el círculo.', voice: 'closing', steps: [], eyesClosed: false });
   phases.push({ kind: 'closing_breaths', title: 'Tres respiraciones', seconds: closing, cue: 'Coge aire mientras el círculo crece y suéltalo mientras se encoge. Tres veces.', steps: [], eyesClosed: false });
   return phases;

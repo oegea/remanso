@@ -17,7 +17,7 @@ import { Breath } from '../ui/Breath';
 import { TextEditor } from '../ui/Editor';
 import { announce } from '../ui/Live';
 import { canVibrate, gong, keepAwake, vibrate } from '../audio/cues';
-import { VOICES, pauseLine, playLine, queueLine, resumeLine, stopLine, warmVoice } from '../audio/voice';
+import { VOICES, busy as voiceBusy, pauseLine, playLine, queueLine, resumeLine, stopLine, warmVoice } from '../audio/voice';
 import { player } from '../audio/player';
 import { SOUNDS, type SoundId } from '../audio/catalog';
 import { TRACKS, track } from '../audio/tracks';
@@ -32,7 +32,7 @@ const BACKGROUNDS: { id: string; label: string }[] = [
   ...SOUNDS.filter((s) => s.uses.includes('meditate')).map((s) => ({ id: `sound:${s.id}`, label: s.name })),
 ];
 
-function fmtMMSS(s: number): string { const m = Math.floor(s / 60), sec = Math.max(0, Math.floor(s % 60)); return `${m}:${String(sec).padStart(2, '0')}`; }
+function fmtMMSS(s: number): string { s = Math.max(0, s); const m = Math.floor(s / 60), sec = Math.floor(s % 60); return `${m}:${String(sec).padStart(2, '0')}`; }
 
 export function Meditate() {
   const dataVersion = useDataVersion();
@@ -188,16 +188,18 @@ export function MeditateSession() {
     if (step) {
       setStepText(step.text);
       if (prefs.vibrate) vibrate('step');
-      if (prefs.voice && step.voice) void playLine(prefs.voiceName, step.voice);
+      if (prefs.voice && step.voice) void queueLine(prefs.voiceName, step.voice);
     }
-    if (elapsed >= phase.seconds) {
+    // Se cambia de parte cuando acaba su tiempo Y la voz ha terminado lo que estuviera
+    // diciendo (ninguna frase se corta: la parte se alarga lo que haga falta).
+    if (elapsed >= phase.seconds && !(prefs.voice && voiceBusy())) {
       if (idx + 1 >= plan.length) { endRun(); return; }
       const next = plan[idx + 1];
       setIdx(idx + 1); setElapsed(0); setStepText(null);
       if (prefs.vibrate) vibrate(next.kind === 'open_eyes' ? 'end' : 'phase');
       if (prefs.gong && next.kind === 'open_eyes') void gong();
       const line = next.voice;
-      if (prefs.voice && line) window.setTimeout(() => void playLine(prefs.voiceName, line), prefs.gong && next.kind === 'open_eyes' ? 2500 : 200);
+      if (prefs.voice && line) window.setTimeout(() => void queueLine(prefs.voiceName, line), prefs.gong && next.kind === 'open_eyes' ? 2500 : 200);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elapsed]);
@@ -216,7 +218,7 @@ export function MeditateSession() {
     let done = false;
     const go = () => { if (!done) { done = true; finishRun(); } };
     window.setTimeout(go, 30_000);
-    void playLine(prefs.voiceName, 'farewell').then(go);
+    void queueLine(prefs.voiceName, 'farewell').then(go);
   };
   const stopEarly = () => {
     if (prefs.gong) void gong(true);

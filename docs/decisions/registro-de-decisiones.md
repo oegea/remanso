@@ -340,6 +340,16 @@ la evidencia manda.
   experiencia desagradable no se editan (son el registro de aquel momento). Lo mismo en
   impulsos: un episodio se puede borrar desde su ficha o nada más terminarlo, y el
   asistente tiene «Paso anterior» sin perder lo elegido.
+- **Ninguna frase se corta (añadido el 2026-11-08).** En uso real, la explicación del
+  recorrido del cuerpo (36 s) se cortaba a los 10 s por el primer paso. Regla general
+  ahora: la voz nunca interrumpe a la voz. Los pasos y los cambios de parte se ponen en
+  cola (`queueLine`, FIFO de verdad) y una parte no termina mientras haya una frase sonando
+  o esperando (`voice.busy()`): se alarga lo que haga falta, aunque la sesión dure algo
+  más de lo previsto. Además el plan conoce lo que dura la voz (`VOICE_INTRO_S`,
+  `VOICE_STEP_S`, `VOICE_FIT_S`): ningún paso empieza antes de que acabe la explicación,
+  los pasos van espaciados, los que no caben se omiten, la parte de cuerpo reserva sitio
+  para la explicación y un paso, y el recorrido del cuerpo sólo entra cuando caben la
+  explicación y al menos tres regiones (en cinco minutos con voz, no; sin voz, sí).
 - **Consecuencias.** Se regeneraron tres frases (`deep_breaths`, `closing`, `farewell`;
   `open_eyes` desaparece) en las dos voces. El campo de contraseña ya no se enfoca solo en
   pantallas táctiles: en iOS, como aplicación instalada, el foco programático dejaba el

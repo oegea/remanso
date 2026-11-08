@@ -57,18 +57,31 @@ export function playLine(voice: VoiceName, id: VoiceId, volume = 1): Promise<voi
   });
 }
 
-/** Como `playLine`, pero espera a que acabe la frase que esté sonando. Si mientras tanto se para o se cambia de frase, no suena. */
-export async function queueLine(voice: VoiceName, id: VoiceId, volume = 1): Promise<void> {
-  if (settle) {
-    const mine = seq;
-    await new Promise<void>((resolve) => { const prev = settle; settle = () => { prev?.(); resolve(); }; });
+let tail: Promise<void> = Promise.resolve();
+let queued = 0;
+
+/**
+ * Como `playLine`, pero espera a que acaben la frase que suena y las que ya estén en cola
+ * (orden de llegada). Ninguna frase corta a otra. Si mientras espera se para todo
+ * (`stopLine`) o alguien llama a `playLine` directamente, la frase en cola no suena.
+ */
+export function queueLine(voice: VoiceName, id: VoiceId, volume = 1): Promise<void> {
+  const mine = seq;
+  queued++;
+  const p = tail.then(() => {
+    queued--;
     if (seq !== mine) return;
-  }
-  return playLine(voice, id, volume);
+    return playLine(voice, id, volume);
+  });
+  tail = p.catch(() => {});
+  return p;
 }
 
+/** Hay una frase sonando o esperando en cola: no es momento de cambiar de parte. */
+export function busy(): boolean { return settle !== null || queued > 0; }
+
 export function stopLine(): void {
-  seq++;
+  seq++; // las frases en cola ven que ya no toca y no suenan
   finish();
   if (el) { try { el.pause(); el.removeAttribute('src'); el.load(); } catch { /* nada */ } }
 }
