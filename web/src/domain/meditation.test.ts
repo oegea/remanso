@@ -45,27 +45,15 @@ describe('plan de sesión', () => {
     expect(cues.size).toBeGreaterThan(3);
     expect(breaths.size).toBe(3);
   });
-  it('nada se omite: cada variante lleva todos sus pasos; el recorrido del cuerpo sólo entra cuando cabe entero', () => {
-    const short = new Set<string>();
-    for (let seed = 1; seed <= 40; seed++) {
-      const p = med.makePlan(5, seed, true);
-      short.add(p[2].kind);
-      expect(p[2].steps.length, 'asentarse: pies y manos; sonidos: su paso').toBe(p[2].kind === 'settle' ? 2 : p[2].kind === 'scan' ? 6 : 1);
-    }
-    expect(short.has('scan')).toBe(false);
-    const mid = new Set<string>();
-    for (let seed = 1; seed <= 40; seed++) mid.add(med.makePlan(10, seed, true)[2].kind);
-    expect(mid.size, 'desde diez minutos, las tres variantes').toBe(3);
-    const silent = new Set<string>();
-    for (let seed = 1; seed <= 40; seed++) silent.add(med.makePlan(5, seed, false)[2].kind);
-    expect(silent.has('scan')).toBe(true);
-    let scans = 0;
-    for (const m of [10, 15, 20]) for (let seed = 1; seed <= 20; seed++) {
+  it('nada se omite: cada variante lleva todos sus pasos y desde diez minutos entran las tres', () => {
+    const kinds = new Set<string>();
+    for (const m of med.DURATIONS) for (let seed = 1; seed <= 30; seed++) {
       const p = med.makePlan(m, seed, true);
-      if (p[2].kind === 'scan') { scans++; expect(p[2].steps.length).toBe(6); }
-      else expect(p[2].steps.length).toBe(p[2].kind === 'settle' ? 2 : 1);
+      kinds.add(p[2].kind);
+      expect(p[2].steps.length, 'asentarse: pies y manos; recorrido: seis regiones; sonidos: su paso').toBe(p[2].kind === 'settle' ? 2 : p[2].kind === 'scan' ? 6 : 1);
+      expect(p[3].steps.length).toBeGreaterThanOrEqual(1);
     }
-    expect(scans).toBeGreaterThan(0);
+    expect(kinds.size).toBe(3);
   });
   it('es determinista con la misma semilla', () => {
     expect(med.makePlan(15, 7)).toEqual(med.makePlan(15, 7));
@@ -76,7 +64,7 @@ describe('diario de meditación', () => {
   let db: Database;
   beforeEach(async () => { db = await Database.create(() => {}); });
   it('guarda, termina, lista y cuenta banderas', () => {
-    const plan = med.makePlan(5, 1);
+    const plan = med.makePlan(10, 1);
     const id = med.start(db, plan, 1000);
     expect(med.list(db)).toHaveLength(0); // sin terminar no aparece
     med.finish(db, id, { now: 1300, doneSeconds: 300, feeling: 1, unpleasant: false, notes: 'bien' });
@@ -95,12 +83,14 @@ describe('diario de meditación', () => {
     expect(med.totals(db)).toEqual({ sessions: 1, minutes: 5 });
   });
   it('descarta las empezadas y no terminadas', () => {
-    med.start(db, med.makePlan(5, 1), 1000);
+    med.start(db, med.makePlan(10, 1), 1000);
     med.discardUnfinished(db);
     expect(db.scalar<number>('SELECT count(*) FROM meditation_sessions')).toBe(0);
   });
   it('preferencias con valores por defecto y persistencia', () => {
     expect(med.prefs(db).minutes).toBe(10);
+    db.run("INSERT INTO settings(key, value) VALUES ('meditation_prefs', '{\"minutes\":5}') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
+    expect(med.prefs(db).minutes, 'cinco minutos ya no existe: pasa a diez').toBe(10);
     med.setPrefs(db, { minutes: 15, voice: true });
     expect(med.prefs(db)).toMatchObject({ minutes: 15, voice: true, vibrate: true });
   });

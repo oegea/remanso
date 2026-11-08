@@ -353,9 +353,12 @@ la evidencia manda.
   (reflexión inicial, foco de la respiración, variante de cuerpo, número de recordatorios
   entre uno y cuatro), al azar entre las que caben enteras; el tiempo sobrante se reparte
   como silencio (`placeSteps`), con más silencio al final de la respiración para que nada
-  caiga sobre el gong. Con voz, en cinco minutos no entra el recorrido del cuerpo (seis
-  regiones) y la reflexión y el foco se eligen entre los que caben; desde diez entran las
-  tres variantes. La duración elegida es un mínimo real; la pantalla de inicio lo explica.
+  caiga sobre el gong. **Diez minutos como mínimo** (la opción de cinco se retira y las
+  preferencias guardadas con cinco pasan a diez): con cinco, sólo la voz ya ocupaba unos
+  200 de los 300 segundos y no quedaba práctica en silencio. Desde diez entran las tres
+  variantes de cuerpo enteras con tiempo de práctica proporcional; quince y veinte añaden
+  recordatorios y silencio. Lo que la persona valoraba del formato (las tres respiraciones
+  con el círculo al principio y al final, la estructura) no cambia.
 - **Consecuencias.** Se regeneraron tres frases (`deep_breaths`, `closing`, `farewell`;
   `open_eyes` desaparece) en las dos voces. El campo de contraseña ya no se enfoca solo en
   pantallas táctiles: en iOS, como aplicación instalada, el foco programático dejaba el

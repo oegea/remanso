@@ -118,7 +118,6 @@ export const HELP = {
     'Qué dice la investigación. Los programas de meditación reducen la ansiedad, el estrés y el ánimo bajo con efectos pequeños o moderados (Goyal 2014, 47 ensayos; revisiones posteriores dan cifras algo menores). Sobre la atención hay menos: una sola sesión de diez minutos mejoró la atención de personas sin experiencia en un estudio, pero es evidencia preliminar. Remanso no promete más que eso: unos minutos de calma que a mucha gente le sientan bien.',
     'Y qué conviene saber. Meditar no le sienta bien a todo el mundo, ni siempre: en una revisión de 83 estudios, alrededor de un 8 % de las personas tuvo alguna experiencia desagradable, sobre todo ansiedad, bajo ánimo o sensaciones extrañas como irrealidad o distancia de uno mismo, a veces sin historial previo y en prácticas breves. Por eso al terminar te preguntamos si hubo algo desagradable. Si lo hay, no te obligues: acorta las sesiones, déjalo un tiempo o déjalo del todo. No tiene nada de malo. Y si tienes historial de trauma o de experiencias psicóticas, o notas que te sienta mal de forma repetida, es mejor practicar con el apoyo de un profesional.',
   ],
-  MED_VARIANTS_SHORT: 'El tiempo que eliges es un mínimo: cada frase de la voz tiene su duración medida y su silencio, y la sesión sólo mete lo que cabe entero (en cinco minutos no entra el recorrido por el cuerpo). Lo que sobra queda como silencio. Si una frase se alarga, la sesión espera a que termine.',
   MED_DURATION: 'Duración',
   MED_MIN: 'min',
   MED_OPTIONS: 'Durante la sesión',

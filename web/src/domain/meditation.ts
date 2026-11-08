@@ -34,7 +34,8 @@ export interface Phase {
   lead?: number;
 }
 
-export const DURATIONS = [5, 10, 15, 20] as const;
+/** Diez minutos como mínimo: con menos no hay sitio para la voz y para practicar en silencio. */
+export const DURATIONS = [10, 15, 20] as const;
 
 const INTENTIONS: [VoiceId, string][] = [
   ['intention_1', 'Piensa en alguien a quien le deseas que le vaya bien hoy. Quédate un momento con ese deseo.'],
@@ -131,7 +132,7 @@ export function makePlan(minutes: number, seed = Date.now(), voice = true): Phas
   const deep = 30 + deepLead;
   const closing = 30;
   const open = voice ? Math.ceil(GONG_S + DUR.closing + GAP_S + 2) : 12;
-  const intentionFor = (id: VoiceId) => Math.max(minutes <= 5 ? 30 : 45, Math.ceil(lineSeconds('empecemos', voice) + (voice ? GONG_S : 0) + lineSeconds(id, voice)));
+  const intentionFor = (id: VoiceId) => Math.max(45, Math.ceil(lineSeconds('empecemos', voice) + (voice ? GONG_S : 0) + lineSeconds(id, voice)));
 
   // Cuerpo y respiración: lo que necesita cada variante (explicación y todos sus pasos).
   const settleSteps: [VoiceId, string][] = [['settle_feet', 'Los pies en el suelo.'], ['settle_hands', 'Las manos, donde descansen.']];
@@ -268,7 +269,7 @@ const DEFAULTS: Prefs = { minutes: 10, voice: true, voiceName: 'serena', vibrate
 export function prefs(db: Database): Prefs {
   const raw = db.scalar<string>("SELECT value FROM settings WHERE key = 'meditation_prefs'");
   if (!raw) return { ...DEFAULTS };
-  try { const p = { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Prefs>) }; if (!isVoiceName(p.voiceName)) p.voiceName = DEFAULTS.voiceName; return p; } catch { return { ...DEFAULTS }; }
+  try { const p = { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Prefs>) }; if (!isVoiceName(p.voiceName)) p.voiceName = DEFAULTS.voiceName; if (!(DURATIONS as readonly number[]).includes(p.minutes)) p.minutes = DEFAULTS.minutes; return p; } catch { return { ...DEFAULTS }; }
 }
 
 export function setPrefs(db: Database, p: Partial<Prefs>): Prefs {
