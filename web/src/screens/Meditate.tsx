@@ -62,6 +62,7 @@ export function Meditate() {
           <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
             {med.DURATIONS.map((m) => <button key={m} className="chip" aria-pressed={prefs.minutes === m} onClick={() => setPrefs({ minutes: m })}>{m} {HELP.MED_MIN}</button>)}
           </div>
+          {prefs.voice && <p className="t-foot t-muted" style={{ margin: 0 }}>{HELP.MED_VARIANTS_SHORT}</p>}
           <h3 className="t-foot" style={{ fontWeight: 600, marginTop: 8 }}>{HELP.MED_OPTIONS}</h3>
           <div className="list">
             <OptRow label={HELP.MED_VOICE} help={HELP.MED_VOICE_HELP} on={prefs.voice} onChange={(v) => setPrefs({ voice: v })} />

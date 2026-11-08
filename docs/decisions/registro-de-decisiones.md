@@ -340,16 +340,22 @@ la evidencia manda.
   experiencia desagradable no se editan (son el registro de aquel momento). Lo mismo en
   impulsos: un episodio se puede borrar desde su ficha o nada más terminarlo, y el
   asistente tiene «Paso anterior» sin perder lo elegido.
-- **Ninguna frase se corta (añadido el 2026-11-08).** En uso real, la explicación del
-  recorrido del cuerpo (36 s) se cortaba a los 10 s por el primer paso. Regla general
-  ahora: la voz nunca interrumpe a la voz. Los pasos y los cambios de parte se ponen en
-  cola (`queueLine`, FIFO de verdad) y una parte no termina mientras haya una frase sonando
-  o esperando (`voice.busy()`): se alarga lo que haga falta, aunque la sesión dure algo
-  más de lo previsto. Además el plan conoce lo que dura la voz (`VOICE_INTRO_S`,
-  `VOICE_STEP_S`, `VOICE_FIT_S`): ningún paso empieza antes de que acabe la explicación,
-  los pasos van espaciados, los que no caben se omiten, la parte de cuerpo reserva sitio
-  para la explicación y un paso, y el recorrido del cuerpo sólo entra cuando caben la
-  explicación y al menos tres regiones (en cinco minutos con voz, no; sin voz, sí).
+- **Ninguna frase se corta y el tiempo es un mínimo exacto (añadido el 2026-11-08).** En
+  uso real, la explicación del recorrido del cuerpo (36 s) se cortaba a los 10 s por el
+  primer paso. Dos capas. (1) La voz nunca interrumpe a la voz: pasos y cambios de parte
+  van a una cola FIFO (`queueLine`) y una parte no termina mientras haya una frase sonando
+  o esperando (`voice.busy()`). (2) El plan es un presupuesto: `tools/voice_durations.py`
+  mide cada frase (el mayor de las dos voces, `voice-durations.json`, que `gen_voice.py`
+  regenera); cada frase cuesta su duración más un silencio mínimo (`GAP_S`, 4 s; tras la
+  explicación de una parte, `INTRO_GAP_S`, 8 s); cada parte necesita su explicación y todos
+  sus pasos (`needSeconds`); la suma de las partes es el mínimo del plan
+  (`planMinSeconds`). Nada se omite: lo que se elige según el tiempo es la combinación
+  (reflexión inicial, foco de la respiración, variante de cuerpo, número de recordatorios
+  entre uno y cuatro), al azar entre las que caben enteras; el tiempo sobrante se reparte
+  como silencio (`placeSteps`), con más silencio al final de la respiración para que nada
+  caiga sobre el gong. Con voz, en cinco minutos no entra el recorrido del cuerpo (seis
+  regiones) y la reflexión y el foco se eligen entre los que caben; desde diez entran las
+  tres variantes. La duración elegida es un mínimo real; la pantalla de inicio lo explica.
 - **Consecuencias.** Se regeneraron tres frases (`deep_breaths`, `closing`, `farewell`;
   `open_eyes` desaparece) en las dos voces. El campo de contraseña ya no se enfoca solo en
   pantallas táctiles: en iOS, como aplicación instalada, el foco programático dejaba el

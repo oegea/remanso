@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { VOICES, VOICE_IDS, voiceText, voiceUrl } from './voice';
 import { makePlan } from '../domain/meditation';
+import DUR from './voice-durations.json';
 
 // Los MP3 de cada voz, tal como están en public/voz/ (si falta uno, se regenera con tools/gen_voice.py).
 const files = Object.keys(import.meta.glob('/public/voz/*/*.mp3'));
@@ -9,6 +10,12 @@ describe('voz guía', () => {
   it('cada frase del catálogo tiene su archivo en las dos voces', () => {
     const missing = VOICES.flatMap((v) => VOICE_IDS.filter((id) => !files.includes(`/public/voz/${v.id}/${id}.mp3`)).map((id) => `${v.id}/${id}`));
     expect(missing).toEqual([]);
+  });
+
+  it('la tabla de duraciones cubre cada frase y nada más (tools/voice_durations.py tras regenerar)', () => {
+    const ids = Object.keys(DUR).sort();
+    expect(ids).toEqual([...VOICE_IDS].sort());
+    for (const id of ids) expect((DUR as Record<string, number>)[id]).toBeGreaterThan(5);
   });
 
   it('no hay archivos huérfanos', () => {

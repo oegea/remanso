@@ -64,3 +64,7 @@ for voice in voices:
         rate = len(text) / secs
         warn = '  ← revisar (ritmo raro)' if rate < 9 or rate > 18 else ''
         print(f'{voice}/{lid}: {secs:.1f} s de audio, {rate:.1f} car/s, generado en {time.time() - t0:.0f} s{warn}', flush=True)
+
+# Tras generar, se vuelve a medir la tabla de duraciones que usa el plan de la sesión.
+import subprocess as _sp
+_sp.run([sys.executable, str(Path(__file__).with_name('voice_durations.py'))], check=False)
