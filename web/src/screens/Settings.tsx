@@ -8,6 +8,7 @@ import { Topbar } from '../ui/Topbar';
 import { Icon } from '../ui/Icon';
 import { Sheet, Confirm } from '../ui/Sheet';
 import * as bio from '../crypto/biometric';
+import * as sup from '../domain/support';
 import { BiometricCancelled, BiometricUnavailable, methodName } from '../crypto/biometric';
 import { announce } from '../ui/Live';
 import { T } from '../text/texts';
@@ -116,6 +117,15 @@ export function Settings() {
           <ActionRow label={T.SETTINGS_HELP_NOW} onClick={() => setSheet('help')} icon="help" />
           <ActionRow label={T.SETTINGS_ABOUT} onClick={() => setSheet('about')} icon="info" />
         </Group>
+
+        {sup.enabled() && (
+          <Group title="Apoyar Remanso">
+            <a className="list-item" href={sup.SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+              <span className="grow"><span>{HELP.SUPPORT_SETTINGS}</span><span className="meta" style={{ display: 'block', color: 'var(--ink-2)' }}>{HELP.SUPPORT_SETTINGS_HELP} {HELP.SUPPORT_OPENS}</span></span>
+              <Icon name="forward" className="t-faint" />
+            </a>
+          </Group>
+        )}
       </div>
 
       <ChangePassword open={sheet === 'password'} onClose={() => setSheet(null)} />

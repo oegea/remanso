@@ -23,6 +23,9 @@ dedicado (Acer Aspire One con antiX Linux, consola de 80×24).
   si–entonces con refuerzo a 7 y 14 días, preguntas de apertura, cierre y revisión
   semanal opcionales, revisión de objetivo, medida de automaticidad (SRBAI) y patrón
   de episodios.
+- **Apoyar** (sólo web): Remanso es gratis y sin contrapartidas; a los dos días de uso
+  aparece una vez una invitación discreta a «invitar a un café» (Ko-fi) que se puede
+  aplazar o descartar para siempre, y el enlace queda en Ajustes (ADR-025).
 - **Seguridad**: SQLCipher (AES-256-CBC + HMAC-SHA512) con clave derivada por
   Argon2id, bloqueo por inactividad, copias cifradas, exportación en claro sólo
   explícita. Sin red, sin telemetría, sin IA. En la web, atajo opcional con Face ID,

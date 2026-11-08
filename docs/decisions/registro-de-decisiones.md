@@ -464,6 +464,26 @@ la evidencia manda.
   se genera hasta cuatro veces y se queda la más pausada dentro del margen. Serena se ha
   regenerado entera con ese criterio.
 
+## ADR-025 · Invitación a apoyar Remanso, discreta y sin contrapartidas (2026-11-08)
+
+- **Contexto.** Remanso es gratis, sin cuentas ni anuncios, y su coste de infraestructura
+  crecerá con el uso. El autor quiere una vía para que quien quiera contribuya («invítame a
+  un café») sin convertirlo en una petición insistente ni en una compra de ventajas.
+- **Decisión.** Una tarjeta en Hoy, como las de apertura o cierre del día, a partir de dos
+  días desde el primer uso. Tres respuestas: «¡Te invito a un café!» (abre la página de
+  apoyo fuera de la aplicación, sin incrustar nada de terceros), «Más adelante» (siete días
+  sin tarjeta; también al pulsar el enlace) y «No volver a mostrar» (definitivo). Las
+  marcas viven en la base cifrada (`settings`: `support_first_use`, `support_next_at`,
+  `support_dismissed`), así sobreviven a restaurar una copia. En Ajustes, abajo del todo,
+  el enlace está siempre. El texto dice lo que es: un regalo hecho con la convicción de que
+  una herramienta para cuidarse no puede vivir de tu atención; que lo mejor que se puede
+  hacer es pasarlo; que el café paga infraestructura y desarrollo con los mismos valores;
+  y que no desbloquea nada. Sin el enlace configurado (`SUPPORT_URL` en
+  `web/src/domain/support.ts`) no se enseña nada. Plataforma: Ko-fi (sin comisión en
+  donaciones puntuales; quien dona no necesita cuenta).
+- **Consecuencias.** El enlace lleva a un sitio externo con sus propias condiciones; se
+  avisa de que se abre fuera. Nada cambia en la aplicación para quien contribuye.
+
 ## Pendientes
 
 - Temporizador opcional de veinte minutos en el episodio de impulso («decido cuando

@@ -10,6 +10,7 @@ import * as actions from '../domain/actions';
 import * as reviews from '../domain/reviews';
 import * as prompts from '../domain/prompts';
 import * as imp from '../domain/impulses';
+import * as sup from '../domain/support';
 import { Answers } from './Review';
 import { TaskDetail, TaskList } from './Tasks';
 import { HELP } from '../text/help';
@@ -55,7 +56,8 @@ export function Today() {
     const closeAnswers = reviews.todayAnswers(db, 'close', t);
     const impulses7 = imp.pattern(db, null, now).total_7;
     const lastOpen = Number(db.scalar<string>("SELECT value FROM settings WHERE key = 'last_open'") ?? 0);
-    return { lastEntry, pending, todayTasks, nextTasks, due, active, acts, dueGoals, weekly, lastOpen, openAvail, closeAvail, propose, openAnswers, closeAnswers, impulses7 };
+    const support = sup.shouldShow(db, now);
+    return { lastEntry, pending, todayTasks, nextTasks, support, due, active, acts, dueGoals, weekly, lastOpen, openAvail, closeAvail, propose, openAnswers, closeAnswers, impulses7 };
   }, [db, dataVersion, t, now]);
 
   const [openTask, setOpenTask] = useState<tk.Task | null>(null);
@@ -166,6 +168,19 @@ export function Today() {
           {data.impulses7 > 0 && <Link href="/impulsos" className="list-item"><Icon name="impulse" className="t-muted" /><span className="grow">{data.impulses7} {data.impulses7 === 1 ? 'episodio' : 'episodios'} {HELP.TODAY_IMPULSES}</span><Icon name="forward" className="t-faint" /></Link>}
           {data.weekly && <Link href="/revision" className="list-item"><Icon name="review" className="t-muted" /><span className="grow">Revisión semanal disponible</span><Icon name="forward" className="t-faint" /></Link>}
         </section>
+
+        {data.support && (
+          <section className="card stack" style={{ marginTop: 24 }} aria-labelledby="h-support">
+            <h2 id="h-support" className="t-lead" style={{ fontWeight: 600 }}>{HELP.SUPPORT_TITLE}</h2>
+            {HELP.SUPPORT_BODY.map((p) => <p key={p} className="t-muted">{p}</p>)}
+            <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <a className="btn btn-primary" href={sup.SUPPORT_URL} target="_blank" rel="noopener noreferrer" onClick={() => { sup.later(db, now); bumpData(); }}>{HELP.SUPPORT_GO}</a>
+              <button className="btn btn-text" onClick={() => { sup.later(db, now); bumpData(); }}>{HELP.SUPPORT_LATER}</button>
+              <button className="btn btn-text" onClick={() => { sup.never(db); bumpData(); announce('Entendido. No volverá a aparecer; el enlace queda en Ajustes.'); }}>{HELP.SUPPORT_NEVER}</button>
+            </div>
+            <p className="t-foot t-faint" style={{ margin: 0 }}>{HELP.SUPPORT_OPENS}</p>
+          </section>
+        )}
 
         {empty && <div className="stack" style={{ marginTop: 24 }}>{HELP.TODAY_EMPTY.map((p) => <p key={p} className="t-muted">{p}</p>)}</div>}
       </div>
