@@ -10,7 +10,7 @@ describe('plan de sesión', () => {
           const plan = med.makePlan(m, seed, voice);
           expect(med.planSeconds(plan)).toBe(m * 60);
           expect(plan.map((p) => p.kind).slice(0, 2)).toEqual(['intention', 'deep_breaths']);
-          expect(['settle', 'scan', 'sounds']).toContain(plan[2].kind);
+          expect(['settle', 'scan', 'sounds', 'posture', 'weight', 'breath_body']).toContain(plan[2].kind);
           expect(plan.map((p) => p.kind).slice(3)).toEqual(['breath', 'open_eyes', 'closing_breaths']);
           expect(plan[1].seconds - (plan[1].lead ?? 0), 'treinta segundos de círculo tras la explicación').toBe(30);
           if (voice) expect(plan[1].lead!).toBeGreaterThanOrEqual(med.lineSeconds('deep_breaths') - med.GAP_S);
@@ -41,19 +41,23 @@ describe('plan de sesión', () => {
       const plan = med.makePlan(10, seed);
       kinds.add(plan[2].kind); cues.add(plan[0].cue); breaths.add(plan[3].cue);
     }
-    expect(kinds.size).toBe(3);
+    expect(kinds.size).toBeGreaterThanOrEqual(3);
     expect(cues.size).toBeGreaterThan(3);
-    expect(breaths.size).toBe(3);
+    expect(breaths.size).toBeGreaterThanOrEqual(3);
   });
-  it('nada se omite: cada variante lleva todos sus pasos y desde diez minutos entran las tres', () => {
-    const kinds = new Set<string>();
-    for (const m of med.DURATIONS) for (let seed = 1; seed <= 30; seed++) {
+  it('nada se omite: cada variante lleva todos sus pasos y desde diez minutos entran todas', () => {
+    const STEPS: Record<string, number> = { settle: 2, scan: 6, sounds: 1, posture: 5, weight: 2, breath_body: 1 };
+    const kinds = new Set<string>(), focuses = new Set<string>(), ends = new Set<string>();
+    for (const m of med.DURATIONS) for (let seed = 1; seed <= 60; seed++) {
       const p = med.makePlan(m, seed, true);
-      kinds.add(p[2].kind);
-      expect(p[2].steps.length, 'asentarse: pies y manos; recorrido: seis regiones; sonidos: su paso').toBe(p[2].kind === 'settle' ? 2 : p[2].kind === 'scan' ? 6 : 1);
+      kinds.add(p[2].kind); focuses.add(p[3].voice!); ends.add(p[5].endVoice!);
+      expect(p[2].steps.length, `${p[2].kind}: todos sus pasos`).toBe(STEPS[p[2].kind]);
       expect(p[3].steps.length).toBeGreaterThanOrEqual(1);
+      expect(p[3].eyesClosed).toBe(p[3].voice !== 'gaze');
     }
-    expect(kinds.size).toBe(3);
+    expect(kinds.size).toBe(6);
+    expect(focuses.size).toBe(7);
+    expect(ends.size).toBe(3);
   });
   it('es determinista con la misma semilla', () => {
     expect(med.makePlan(15, 7)).toEqual(med.makePlan(15, 7));

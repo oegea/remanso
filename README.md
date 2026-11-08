@@ -29,8 +29,9 @@ dedicado (Acer Aspire One con antiX Linux, consola de 80×24).
   Touch ID o huella (passkey de plataforma con PRF que envuelve la clave; la contraseña
   sigue siendo la única llave real, ADR-023).
 
-- **Meditar** (sólo web): sesiones guiadas de calma y atención de 5 a 20 minutos, distintas
-  cada vez (reflexión, gong, respiraciones, cuerpo, respiración), con vibración, gong y una
+- **Meditar** (sólo web): sesiones guiadas de calma y atención de 10 a 20 minutos, distintas
+  cada vez (reflexión, gong, respiraciones, una de seis prácticas de cuerpo, uno de siete
+  focos de atención, recordatorios), con vibración, gong y una
   voz guía opcional (Serena o Ryan) que explica cada parte sin dar nada por sabido; las
   frases están pregrabadas con un modelo abierto (`web/public/voz/LICENSE.md`). Diario de
   sesiones con una pregunta de seguridad sobre experiencias desagradables

@@ -14,7 +14,7 @@ import { rng } from '../audio/synth';
 import { isVoiceName, type VoiceId, type VoiceName } from '../audio/voice';
 import DURATIONS_JSON from '../audio/voice-durations.json';
 
-export type PhaseKind = 'intention' | 'deep_breaths' | 'settle' | 'scan' | 'sounds' | 'breath' | 'closing_breaths' | 'open_eyes';
+export type PhaseKind = 'intention' | 'deep_breaths' | 'settle' | 'scan' | 'sounds' | 'posture' | 'weight' | 'breath_body' | 'breath' | 'closing_breaths' | 'open_eyes';
 
 export interface Step { at: number; text: string; voice?: VoiceId }
 
@@ -32,6 +32,8 @@ export interface Phase {
   eyesClosed: boolean;
   /** Segundos iniciales en que se enseña la indicación (la voz explica) antes del círculo. */
   lead?: number;
+  /** Frase que suena al acabar la última parte (la despedida), antes del formulario. */
+  endVoice?: VoiceId;
 }
 
 /** Diez minutos como mínimo: con menos no hay sitio para la voz y para practicar en silencio. */
@@ -44,6 +46,8 @@ const INTENTIONS: [VoiceId, string][] = [
   ['intention_4', 'Piensa en algo que agradeces hoy, por pequeño que sea, y déjalo estar un momento.'],
   ['intention_5', 'Desea que las personas con las que te cruzarás hoy estén bien. Sin más.'],
   ['intention_6', 'Date permiso para no hacer nada útil durante estos minutos.'],
+  ['intention_7', 'Recuerda por qué te sientas hoy. Querer un rato de calma ya es suficiente.'],
+  ['intention_8', 'Durante estos minutos no hay nada que resolver ni que conseguir. Sólo toca estar.'],
 ];
 
 const REMINDERS: [VoiceId, string][] = [
@@ -53,6 +57,42 @@ const REMINDERS: [VoiceId, string][] = [
   ['reminder_4', 'Si aparece una sensación, un ruido o una idea, déjala estar y vuelve.'],
   ['reminder_5', 'Cada vez que vuelves es la práctica. Volver no es fallar.'],
   ['reminder_6', 'Relaja la cara, los hombros, las manos. Y sigue con la respiración.'],
+  ['reminder_7', 'Si notas sueño o pesadez, endereza un poco la espalda y aviva la atención.'],
+  ['reminder_8', 'Si notas prisa o inquietud, afloja los hombros y deja que la atención se pose más blanda.'],
+  ['reminder_9', 'De vez en cuando, vigila de reojo si sigues con tu apoyo. Si no, vuelve.'],
+  ['reminder_10', 'La atención se posa, no se aprieta. Si fuerzas, suelta un poco.'],
+  ['reminder_11', 'Deja que esta respiración sea la primera.'],
+];
+
+const FAREWELLS: VoiceId[] = ['farewell', 'farewell_2', 'farewell_3'];
+
+/** Variantes de la parte de cuerpo: explicación, pasos y texto en pantalla. */
+interface BodyVariant { kind: PhaseKind; title: string; cue: string; voice: VoiceId; steps: [VoiceId, string][]; eyesClosed: boolean }
+const BODIES: BodyVariant[] = [
+  { kind: 'settle', title: 'Asentarse', voice: 'settle', eyesClosed: true, cue: 'Cierra los ojos. Respira con normalidad y nota el cuerpo sentado: el peso en el asiento, los pies en el suelo, las manos donde estén.',
+    steps: [['settle_feet', 'Los pies en el suelo.'], ['settle_hands', 'Las manos, donde descansen.']] },
+  { kind: 'scan', title: 'Un recorrido por el cuerpo', voice: 'scan', eyesClosed: true, cue: 'Cierra los ojos y respira con normalidad. Vamos a recorrer el cuerpo despacio, de los pies a la cara, sólo notando lo que hay.',
+    steps: [] /* se rellena abajo con SCAN_REGIONS */ },
+  { kind: 'sounds', title: 'Los sonidos', voice: 'sounds', eyesClosed: true, cue: 'Cierra los ojos. Deja que lleguen los sonidos de alrededor, cercanos y lejanos, sin ir a buscarlos ni ponerles nombre.',
+    steps: [['sounds_step', 'Los sonidos aparecen y desaparecen solos.']] },
+  { kind: 'posture', title: 'La postura, punto por punto', voice: 'posture', eyesClosed: true, cue: 'Cierra los ojos. Vamos a colocar la postura de abajo arriba, ajustando lo mínimo, para que el cuerpo pueda quedarse quieto sin esfuerzo.',
+    steps: [['posture_1', 'Los pies y el asiento.'], ['posture_2', 'La espalda: recta, sin rigidez.'], ['posture_3', 'Las manos, donde estén cómodas.'], ['posture_4', 'Los hombros, lejos de las orejas.'], ['posture_5', 'La cabeza y la cara.']] },
+  { kind: 'weight', title: 'El peso y el apoyo', voice: 'weight', eyesClosed: true, cue: 'Cierra los ojos. Nota sólo el peso del cuerpo y lo que lo sostiene, como una montaña que no hace nada por mantenerse en pie.',
+    steps: [['weight_support', 'Dónde apoya el cuerpo.'], ['weight_still', 'La quietud que da ese peso.']] },
+  { kind: 'breath_body', title: 'La respiración en todo el cuerpo', voice: 'breath_body', eyesClosed: true, cue: 'Cierra los ojos. Siente cómo el cuerpo entero se mueve con el aire, en un vaivén muy pequeño, sin respirar más hondo.',
+    steps: [['breath_body_step', 'El cuerpo se ensancha un poco al entrar el aire y se afloja al salir.']] },
+];
+
+/** Variantes del foco de la parte de respiración. */
+interface FocusVariant { voice: VoiceId; cue: string; eyesClosed: boolean }
+const FOCUSES: FocusVariant[] = [
+  { voice: 'breath_nose', eyesClosed: true, cue: 'Lleva ahora la atención al aire que entra y sale por la nariz. Fresco al entrar, templado al salir. Ese es tu punto de apoyo.' },
+  { voice: 'breath_belly', eyesClosed: true, cue: 'Lleva ahora la atención al vientre, que sube al coger aire y baja al soltarlo. Sin cambiar el ritmo. Ese es tu punto de apoyo.' },
+  { voice: 'breath_count', eyesClosed: true, cue: 'Lleva ahora la atención a la respiración y cuenta cada espiración: uno, dos… hasta diez, y vuelve a empezar. Si te pierdes, empieza en uno, sin más.' },
+  { voice: 'breath_cycle', eyesClosed: true, cue: 'Sigue cada ciclo entero: el aire entra, una pausa breve, sale, otra pausa. Sin cambiar el ritmo. Ese es tu punto de apoyo.' },
+  { voice: 'breath_count_in', eyesClosed: true, cue: 'Cuenta al empezar a coger aire, hacia atrás: diez, nueve… hasta uno, y vuelve a diez. Si te pierdes, empieza otra vez en diez.' },
+  { voice: 'gaze', eyesClosed: false, cue: 'Ojos entreabiertos, la mirada posada en un punto quieto delante de ti, un poco por debajo de la altura de los ojos. Cuando la atención se vaya, vuelve a él.' },
+  { voice: 'mind', eyesClosed: true, cue: 'Deja que los pensamientos aparezcan y pasen, como nubes en un cielo que no se mueve. No los sigas ni los apartes: míralos llegar y míralos irse.' },
 ];
 
 const SCAN_REGIONS: [string, string][] = [
@@ -63,6 +103,8 @@ const SCAN_REGIONS: [string, string][] = [
   ['Los hombros y el cuello', 'Los hombros y el cuello. Si hay tensión, sólo obsérvala.'],
   ['La cara', 'La cara: la frente, los ojos, la mandíbula. Deja que se aflojen si quieren.'],
 ];
+
+BODIES[1].steps = SCAN_REGIONS.map(([, text], i) => [`scan_${i + 1}` as VoiceId, text]);
 
 function pick<T>(r: () => number, list: readonly T[]): T { return list[Math.floor(r() * list.length)]; }
 function shuffle<T>(r: () => number, list: readonly T[]): T[] { const a = [...list]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
@@ -135,62 +177,49 @@ export function makePlan(minutes: number, seed = Date.now(), voice = true): Phas
   const intentionFor = (id: VoiceId) => Math.max(45, Math.ceil(lineSeconds('empecemos', voice) + (voice ? GONG_S : 0) + lineSeconds(id, voice)));
 
   // Cuerpo y respiración: lo que necesita cada variante (explicación y todos sus pasos).
-  const settleSteps: [VoiceId, string][] = [['settle_feet', 'Los pies en el suelo.'], ['settle_hands', 'Las manos, donde descansen.']];
-  const scanSteps: [VoiceId, string][] = SCAN_REGIONS.map(([, text], i) => [`scan_${i + 1}` as VoiceId, text]);
-  const soundsSteps: [VoiceId, string][] = [['sounds_step', 'Los sonidos aparecen y desaparecen solos.']];
-  const needs = { settle: needSeconds('settle', settleSteps.map(([id]) => id), voice), scan: needSeconds('scan', scanSteps.map(([id]) => id), voice), sounds: needSeconds('sounds', soundsSteps.map(([id]) => id), voice) } as const;
-  const bodyMinAny = Math.min(needs.settle, needs.sounds);
-  const BREATHS: [ 'nose' | 'belly' | 'count', string, VoiceId][] = [
-    ['nose', 'Lleva ahora la atención al aire que entra y sale por la nariz. Fresco al entrar, templado al salir. Ese es tu punto de apoyo.', 'breath_nose'],
-    ['belly', 'Lleva ahora la atención al vientre, que sube al coger aire y baja al soltarlo. Sin cambiar el ritmo. Ese es tu punto de apoyo.', 'breath_belly'],
-    ['count', 'Lleva ahora la atención a la respiración y cuenta cada espiración: uno, dos… hasta diez, y vuelve a empezar. Si te pierdes, empieza en uno, sin más.', 'breath_count'],
-  ];
+  const needOf = (b: BodyVariant) => needSeconds(b.voice, b.steps.map(([id]) => id), voice);
+  const bodyMinAny = Math.min(...BODIES.map(needOf));
   const remindersAll = shuffle(r, REMINDERS);
   const shortestReminder = [...REMINDERS].sort((a, b) => DUR[a[0]] - DUR[b[0]])[0];
   const breathMinFor = (id: VoiceId) => needSeconds(id, [shortestReminder[0]], voice);
 
   // Combinación: al azar entre las que caben; si ninguna cabe (no debería), la más corta.
-  const intents = shuffle(r, INTENTIONS), breaths = shuffle(r, BREATHS);
+  const intents = shuffle(r, INTENTIONS), focuses = shuffle(r, FOCUSES);
   const fitsAll = (iid: VoiceId, bid: VoiceId) => total - intentionFor(iid) - deep - closing - open >= bodyMinAny + breathMinFor(bid);
-  let intent = intents.find((i) => breaths.some((b) => fitsAll(i[0], b[2])));
-  let breathCue = intent ? breaths.find((b) => fitsAll(intent![0], b[2]))! : undefined;
-  if (!intent || !breathCue) {
+  let intent = intents.find((i) => focuses.some((f) => fitsAll(i[0], f.voice)));
+  let focus = intent ? focuses.find((f) => fitsAll(intent![0], f.voice))! : undefined;
+  if (!intent || !focus) {
     intent = [...INTENTIONS].sort((a, b) => DUR[a[0]] - DUR[b[0]])[0];
-    breathCue = [...BREATHS].sort((a, b) => DUR[a[2]] - DUR[b[2]])[0];
+    focus = [...FOCUSES].sort((a, b) => DUR[a.voice] - DUR[b.voice])[0];
   }
   const intention = intentionFor(intent[0]);
   const main = total - intention - deep - closing - open;
   // Si el primer recordatorio al azar no cabe, va el más corto.
-  if (needSeconds(breathCue[2], [remindersAll[0][0]], voice) > main - bodyMinAny) {
+  if (needSeconds(focus.voice, [remindersAll[0][0]], voice) > main - bodyMinAny) {
     const k = remindersAll.findIndex((x) => x[0] === shortestReminder[0]);
     if (k > 0) { remindersAll.splice(k, 1); remindersAll.unshift(shortestReminder); }
   }
-  const breathMin = needSeconds(breathCue[2], [remindersAll[0][0]], voice);
+  const breathMin = needSeconds(focus.voice, [remindersAll[0][0]], voice);
 
-  // Cuerpo: sólo las variantes que caben enteras dejando a la respiración su mínimo.
+  // Cuerpo: sólo las variantes que caben enteras dejando a la respiración su mínimo; el
+  // recorrido del cuerpo, además, sólo si puede ocupar su parte sin estrechar la respiración.
   const bodyMax = main - breathMin;
-  const fits = (['settle', 'scan', 'sounds'] as const).filter((k) => needs[k] <= bodyMax && (k !== 'scan' || Math.round(main * 0.4) >= needs.scan));
-  const bodyKind = fits.length ? pick(r, fits) : (needs.sounds <= needs.settle ? 'sounds' : 'settle');
-  const bodyShare = bodyKind === 'scan' ? 0.4 + r() * 0.1 : 0.25 + r() * 0.15;
-  const body = Math.max(Math.round(main * bodyShare), Math.min(needs[bodyKind], bodyMax));
+  const fits = BODIES.filter((b) => needOf(b) <= bodyMax && (b.kind !== 'scan' || Math.round(main * 0.4) >= needOf(b)));
+  const bodyVar = fits.length ? pick(r, fits) : [...BODIES].sort((a, b) => needOf(a) - needOf(b))[0];
+  const bodyShare = bodyVar.kind === 'scan' ? 0.4 + r() * 0.1 : 0.25 + r() * 0.15;
+  const body = Math.max(Math.round(main * bodyShare), Math.min(needOf(bodyVar), bodyMax));
   const breath = main - body;
 
   const phases: Phase[] = [];
   phases.push({ kind: 'intention', title: 'Para empezar', seconds: intention, cue: intent[1], voice: intent[0], steps: [], eyesClosed: false });
   phases.push({ kind: 'deep_breaths', title: 'Tres respiraciones profundas', seconds: deep, lead: deepLead, cue: 'Cuando aparezca el círculo, coge aire despacio mientras crece y suéltalo mientras se encoge. Tres veces.', voice: 'deep_breaths', steps: [], eyesClosed: false });
-  if (bodyKind === 'settle') {
-    phases.push({ kind: 'settle', title: 'Asentarse', seconds: body, cue: 'Cierra los ojos. Respira con normalidad y nota el cuerpo sentado: el peso en el asiento, los pies en el suelo, las manos donde estén.', voice: 'settle', steps: placeSteps(body, 'settle', settleSteps, voice), eyesClosed: true });
-  } else if (bodyKind === 'scan') {
-    phases.push({ kind: 'scan', title: 'Un recorrido por el cuerpo', seconds: body, cue: 'Cierra los ojos y respira con normalidad. Vamos a recorrer el cuerpo despacio, de los pies a la cara, sólo notando lo que hay.', voice: 'scan', steps: placeSteps(body, 'scan', scanSteps, voice), eyesClosed: true });
-  } else {
-    phases.push({ kind: 'sounds', title: 'Los sonidos', seconds: body, cue: 'Cierra los ojos. Deja que lleguen los sonidos de alrededor, cercanos y lejanos, sin ir a buscarlos ni ponerles nombre.', voice: 'sounds', steps: placeSteps(body, 'sounds', soundsSteps, voice), eyesClosed: true });
-  }
+  phases.push({ kind: bodyVar.kind, title: bodyVar.title, seconds: body, cue: bodyVar.cue, voice: bodyVar.voice, steps: placeSteps(body, bodyVar.voice, bodyVar.steps, voice), eyesClosed: bodyVar.eyesClosed });
   // Tantos recordatorios como quepan (uno cada ~75 s), nunca más de cuatro ni menos de uno.
-  let n = Math.max(1, Math.min(4, Math.floor((breath - needSeconds(breathCue[2], [], voice)) / 75)));
-  while (n > 1 && needSeconds(breathCue[2], remindersAll.slice(0, n).map(([id]) => id), voice) > breath) n--;
-  phases.push({ kind: 'breath', title: 'La respiración', seconds: breath, cue: breathCue[1], voice: breathCue[2], steps: placeSteps(breath, breathCue[2], remindersAll.slice(0, n), voice, 1, 1), eyesClosed: true });
+  let n = Math.max(1, Math.min(4, Math.floor((breath - needSeconds(focus.voice, [], voice)) / 75)));
+  while (n > 1 && needSeconds(focus.voice, remindersAll.slice(0, n).map(([id]) => id), voice) > breath) n--;
+  phases.push({ kind: 'breath', title: focus.voice === 'gaze' ? 'Un punto a la vista' : focus.voice === 'mind' ? 'Mirar la mente' : 'La respiración', seconds: breath, cue: focus.cue, voice: focus.voice, steps: placeSteps(breath, focus.voice, remindersAll.slice(0, n), voice, 1, 1), eyesClosed: focus.eyesClosed });
   phases.push({ kind: 'open_eyes', title: 'Para terminar', seconds: open, cue: 'Abre los ojos despacio. Mira alrededor. Cuando estés, tres respiraciones más siguiendo el círculo.', voice: 'closing', steps: [], eyesClosed: false });
-  phases.push({ kind: 'closing_breaths', title: 'Tres respiraciones', seconds: closing, cue: 'Coge aire mientras el círculo crece y suéltalo mientras se encoge. Tres veces.', steps: [], eyesClosed: false });
+  phases.push({ kind: 'closing_breaths', title: 'Tres respiraciones', seconds: closing, cue: 'Coge aire mientras el círculo crece y suéltalo mientras se encoge. Tres veces.', steps: [], eyesClosed: false, endVoice: pick(r, FAREWELLS) });
   return phases;
 }
 

@@ -219,7 +219,7 @@ export function MeditateSession() {
     let done = false;
     const go = () => { if (!done) { done = true; finishRun(); } };
     window.setTimeout(go, 30_000);
-    void queueLine(prefs.voiceName, 'farewell').then(go);
+    void queueLine(prefs.voiceName, plan[plan.length - 1]?.endVoice ?? 'farewell').then(go);
   };
   const stopEarly = () => {
     if (prefs.gong) void gong(true);

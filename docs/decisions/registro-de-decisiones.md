@@ -434,6 +434,36 @@ la evidencia manda.
   bloqueo manual sin reapertura, cambio de contraseña, cancelación con reintento, freno,
   retirada del autenticador y desactivación.
 
+## ADR-024 · Más variantes de la sesión de meditación, dentro de la misma práctica (2026-11-08)
+
+- **Contexto.** La sesión tenía seis reflexiones iniciales, tres variantes de cuerpo, tres
+  focos de respiración, seis recordatorios y una despedida: 54 combinaciones. El autor
+  valora que cada sesión sea distinta sin saber qué va a tocar, y pidió más variedad sin
+  salirse de la práctica de calma con un objeto de atención ni añadir modas.
+- **Decisión.** Veinticuatro frases nuevas (dos voces), todas elementos clásicos de esa
+  práctica en lenguaje neutro:
+  - Cuerpo: **la postura, punto por punto** (pies y asiento, espalda, manos, hombros,
+    cabeza y cara), **el peso y el apoyo** (lo que sostiene, la quietud) y **la
+    respiración en todo el cuerpo**. Con las tres anteriores, seis variantes.
+  - Foco: **el ciclo completo** (entra, pausa, sale, pausa), **contar al coger aire de
+    diez a uno**, **un punto a la vista** (ojos entreabiertos, mirada posada; la única
+    parte con los ojos abiertos) y **mirar la mente** (los pensamientos como nubes en un
+    cielo quieto). Con los tres anteriores, siete.
+  - Recordatorios: los dos ajustes clásicos (contra la pesadez: enderezar y avivar; contra
+    la inquietud: aflojar y posar más blando) y tres sobre el tono (vigilar de reojo, la
+    atención se posa y no se aprieta, cada respiración es la primera). Once en total.
+  - Dos reflexiones iniciales más (por qué te sientas hoy; nada que resolver) y dos
+    despedidas alternativas, elegidas por el plan (`Phase.endVoice`).
+  Las variantes viven en `BODIES` y `FOCUSES` (`meditation.ts`) con su explicación, sus
+  pasos y si piden los ojos cerrados; el presupuesto de tiempo del ADR-022 decide cuáles
+  caben en cada sesión. Combinaciones: 8 × 6 × 7 × 3 = 1 008, sin contar el orden de los
+  recordatorios.
+- **Voces.** El autor notó que Serena sonaba con más prisa que Ryan (medido: unos 13
+  caracteres por segundo frente a 12). `gen_voice.py` lleva ahora una instrucción y una
+  velocidad por voz, y un ritmo máximo aceptable (12,3 car/s Serena, 12,8 Ryan): cada frase
+  se genera hasta cuatro veces y se queda la más pausada dentro del margen. Serena se ha
+  regenerado entera con ese criterio.
+
 ## Pendientes
 
 - Temporizador opcional de veinte minutos en el episodio de impulso («decido cuando
