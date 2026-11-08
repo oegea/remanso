@@ -7,7 +7,7 @@
 import type { Database } from '../db/sqlite';
 
 /** Página de apoyo (Ko-fi). Vacío mientras no exista: entonces no se enseña nada. */
-export const SUPPORT_URL = '';
+export const SUPPORT_URL: string = 'https://ko-fi.com/oriolegea';
 
 export const FIRST_AFTER_S = 2 * 86_400;
 export const LATER_S = 7 * 86_400;
