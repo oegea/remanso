@@ -58,7 +58,9 @@ export function Impulse() {
   useEffect(() => {
     if (step !== 'wait') return;
     // Cada segundo mientras se respira con el círculo (muestra el tiempo); cada 30 s en el resto.
-    const id = window.setInterval(() => tick((x) => x + 1), pathway === 'breathe' && sub === 1 ? 1000 : 30_000);
+    const breathing = pathway === 'breathe' && sub === 1;
+    // Siguiendo el círculo no se toca la pantalla: cuenta como uso para el bloqueo por inactividad.
+    const id = window.setInterval(() => { if (breathing) session.keepAlive(); tick((x) => x + 1); }, breathing ? 1000 : 30_000);
     return () => window.clearInterval(id);
   }, [step, pathway, sub]);
   const fmtSecs = (s: number) => (s >= 60 ? `${Math.floor(s / 60)} min ${s % 60} s` : `${s} s`);

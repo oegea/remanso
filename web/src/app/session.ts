@@ -349,6 +349,15 @@ class Session {
     this.lastActivity = Date.now();
   }
 
+  /**
+   * Hay algo en marcha que se sigue sin tocar la pantalla (una sesión de meditación, la
+   * guía de respiración): cuenta como uso, para que el bloqueo por inactividad no lo corte
+   * a medias. Quien lo tenga en marcha lo llama mientras dure.
+   */
+  keepAlive(): void {
+    this.touch();
+  }
+
   /** Bloqueo por inactividad: un temporizador que se reprograma, sin polling. */
   private armLock() {
     if (this.lockTimer) window.clearTimeout(this.lockTimer);

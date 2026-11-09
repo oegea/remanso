@@ -9,6 +9,7 @@ import { useLocation } from 'wouter';
 import { session } from '../app/session';
 import { bumpData, useDataVersion } from '../app/useSession';
 import * as med from '../domain/meditation';
+import * as live from '../domain/meditationRun';
 import { fmtDateCompact, fmtTime, today, tsToDay } from '../domain/dates';
 import { Topbar } from '../ui/Topbar';
 import { Icon } from '../ui/Icon';
@@ -143,8 +144,8 @@ export function MeditateSession() {
   const setup = useRef(pending);
   const plan = setup.current?.plan ?? [];
   const prefs = setup.current?.prefs ?? med.prefs(db);
-  const [idx, setIdx] = useState(0);
-  const [elapsed, setElapsed] = useState(0);          // segundos dentro de la fase
+  const [run, setRun] = useState<live.Run>(live.START); // parte actual, segundos dentro de ella, círculo
+  const runRef = useRef<live.Run>(live.START);
   const [doneTotal, setDoneTotal] = useState(0);      // segundos totales hechos
   const [running, setRunning] = useState(true);
   const [stage, setStage] = useState<'run' | 'ending' | 'form'>('run');
@@ -152,9 +153,24 @@ export function MeditateSession() {
   const [askStop, setAskStop] = useState(false);
   const rowId = useRef<number | null>(null);
   const release = useRef<() => void>(() => {});
+  const timers = useRef<number[]>([]);                // frases que esperan su momento (tras el gong)
+  const clearTimers = () => { timers.current.forEach((t) => window.clearTimeout(t)); timers.current = []; };
   const total = useMemo(() => med.planSeconds(plan), [plan]);
 
-  // Arranque: fila en la base, pantalla encendida, fondo, gong y primera indicación.
+  // Lo que el director de la sesión (meditationRun.ts) pide hacer sonar o enseñar.
+  const opts: live.Options = { voice: prefs.voice, gong: prefs.gong };
+  const perform = (cues: live.Cue[]) => {
+    for (const c of cues) {
+      if (c.kind === 'gong') void gong();
+      else if (c.kind === 'vibrate') { if (prefs.vibrate) vibrate(c.pattern); }
+      else if (c.kind === 'step') setStepText(c.text);
+      else if (c.delayMs > 0) timers.current.push(window.setTimeout(() => void queueLine(prefs.voiceName, c.id), c.delayMs));
+      else void queueLine(prefs.voiceName, c.id);
+    }
+  };
+
+  // Arranque: fila en la base, pantalla encendida, fondo, gong y primera indicación (que
+  // espera en cola a que acabe «Empecemos», lanzado desde el botón).
   useEffect(() => {
     if (!setup.current) { navigate('/meditar'); return; }
     pending = null;
@@ -162,51 +178,32 @@ export function MeditateSession() {
     void keepAwake().then((r) => { release.current = r; });
     if (prefs.background.startsWith('track:')) { const t = track(prefs.background.slice(6)); if (t) { player.setLoop(true); void player.playTrack(t); } }
     else if (prefs.background.startsWith('sound:')) void player.play(prefs.background.slice(6) as SoundId);
-    if (prefs.gong) void gong();
-    if (prefs.vibrate) vibrate('phase');
-    const first = plan[0].voice;
-    if (prefs.voice && first) window.setTimeout(() => void queueLine(prefs.voiceName, first), prefs.gong ? 2500 : 300);
-    return () => { release.current(); stopLine(); };
+    perform(live.begin(plan, opts));
+    return () => { release.current(); clearTimers(); stopLine(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reloj de la sesión.
+  // Reloj de la sesión: cada segundo, el director dice si toca un paso, el círculo o la parte siguiente.
   useEffect(() => {
     if (!running || stage !== 'run' || plan.length === 0) return;
     const id = window.setInterval(() => {
-      setElapsed((e) => e + 1);
+      session.keepAlive(); // meditando no se toca la pantalla: que el bloqueo por inactividad no corte la sesión
+      const prev = runRef.current;
+      const r = live.tick(plan, prev, opts, voiceBusy());
+      runRef.current = r.run;
+      setRun(r.run);
       setDoneTotal((d) => d + 1);
+      if (r.run.idx !== prev.idx) setStepText(null);
+      perform(r.cues);
+      if (r.finished) endRun();
     }, 1000);
     return () => clearInterval(id);
-  }, [running, stage, plan.length]);
-
-  // Pasos intermedios y cambios de fase.
-  useEffect(() => {
-    if (stage !== 'run' || plan.length === 0) return;
-    const phase = plan[idx];
-    const step = phase.steps.find((s) => s.at === elapsed);
-    if (step) {
-      setStepText(step.text);
-      if (prefs.vibrate) vibrate('step');
-      if (prefs.voice && step.voice) void queueLine(prefs.voiceName, step.voice);
-    }
-    // Se cambia de parte cuando acaba su tiempo Y la voz ha terminado lo que estuviera
-    // diciendo (ninguna frase se corta: la parte se alarga lo que haga falta). Si un audio
-    // se quedara colgado sin acabar nunca, se sigue pasados 45 s (más que la frase más larga).
-    if (elapsed >= phase.seconds && !(prefs.voice && voiceBusy() && elapsed < phase.seconds + 45)) {
-      if (idx + 1 >= plan.length) { endRun(); return; }
-      const next = plan[idx + 1];
-      setIdx(idx + 1); setElapsed(0); setStepText(null);
-      if (prefs.vibrate) vibrate(next.kind === 'open_eyes' ? 'end' : 'phase');
-      if (prefs.gong && next.kind === 'open_eyes') void gong();
-      const line = next.voice;
-      if (prefs.voice && line) window.setTimeout(() => void queueLine(prefs.voiceName, line), prefs.gong && next.kind === 'open_eyes' ? 2500 : 200);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elapsed]);
+  }, [running, stage, plan.length]);
 
   const finishRun = () => {
     setRunning(false);
+    clearTimers();
     stopLine();
     setStage('form');
     void player.stop();
@@ -216,6 +213,7 @@ export function MeditateSession() {
     setRunning(false);
     if (!prefs.voice) { finishRun(); return; }
     setStage('ending');
+    session.keepAlive();
     let done = false;
     const go = () => { if (!done) { done = true; finishRun(); } };
     window.setTimeout(go, 30_000);
@@ -234,9 +232,9 @@ export function MeditateSession() {
   if (plan.length === 0) return null;
   if (stage === 'form') return <EndForm rowId={rowId.current} doneSeconds={doneTotal} planned={total} />;
 
+  const idx = run.idx;
   const phase = plan[idx];
-  const remaining = total - doneTotal;
-  const breathing = (phase.kind === 'deep_breaths' || phase.kind === 'closing_breaths') && elapsed >= (phase.lead ?? 0) && stage === 'run';
+  const breathing = live.circleVisible(plan, run) && stage === 'run';
   return (
     <div className="screen med-stage">
       <header className="topbar">
@@ -253,8 +251,8 @@ export function MeditateSession() {
           </div>
         )}
         <div style={{ textAlign: 'center' }}>
-          <p className="med-time num" aria-live="off">{stage === 'ending' ? fmtMMSS(0) : running ? fmtMMSS(phase.seconds - elapsed) : HELP.MED_PAUSED}</p>
-          <p className="t-foot t-faint num" style={{ margin: '4px 0 0' }}>{fmtMMSS(remaining)} {HELP.MED_PART_LEFT}</p>
+          <p className="med-time num" aria-live="off">{stage === 'ending' ? fmtMMSS(0) : running ? fmtMMSS(live.phaseLeft(plan, run)) : HELP.MED_PAUSED}</p>
+          <p className="t-foot t-faint num" style={{ margin: '4px 0 0' }}>{fmtMMSS(stage === 'ending' ? 0 : live.totalLeft(plan, run))} {HELP.MED_PART_LEFT}</p>
         </div>
       </div>
       <div className="content med-foot row">

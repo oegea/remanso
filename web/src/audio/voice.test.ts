@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { VOICES, VOICE_IDS, voiceText, voiceUrl } from './voice';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { VOICES, VOICE_IDS, busy, playLine, queueLine, stopLine, voiceText, voiceUrl } from './voice';
+import { installFakeAudio, resetFakeAudio, spoken } from './fake-audio';
 import { makePlan } from '../domain/meditation';
 import DUR from './voice-durations.json';
 
@@ -30,5 +31,53 @@ describe('voz guía', () => {
     }
     for (const id of used) expect(voiceText(id as (typeof VOICE_IDS)[number]).length).toBeGreaterThan(60);
     expect(voiceUrl('serena', 'empecemos')).toMatch(/\/voz\/serena\/empecemos\.mp3$/);
+  });
+});
+
+describe('cola de la voz: ninguna frase corta a otra', () => {
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(0); installFakeAudio(); resetFakeAudio(); });
+  afterEach(() => { stopLine(); vi.useRealTimers(); });
+  const whole = () => spoken.map((s) => `${s.id}${s.cut ? ' (cortada)' : ''}`);
+
+  it('lo que se encola espera a la frase lanzada desde un botón («Empecemos» suena entera)', async () => {
+    void playLine('serena', 'empecemos');
+    await vi.advanceTimersByTimeAsync(2500);
+    void queueLine('serena', 'intention_1');
+    expect(busy()).toBe(true);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(whole()).toEqual(['empecemos', 'intention_1']);
+    expect(spoken[1].start).toBeGreaterThanOrEqual(spoken[0].end!);
+    expect(busy()).toBe(false);
+  });
+
+  it('varias frases encoladas mientras suena otra suenan todas, enteras y en orden', async () => {
+    void queueLine('serena', 'scan');
+    await vi.advanceTimersByTimeAsync(1000);
+    void queueLine('serena', 'scan_1');
+    void queueLine('serena', 'scan_2');
+    void queueLine('serena', 'scan_3');
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(whole()).toEqual(['scan', 'scan_1', 'scan_2', 'scan_3']);
+    for (let i = 1; i < spoken.length; i++) expect(spoken[i].start).toBeGreaterThanOrEqual(spoken[i - 1].end!);
+  });
+
+  it('parar lo calla todo: lo que suena y lo que esperaba', async () => {
+    void queueLine('serena', 'scan');
+    void queueLine('serena', 'scan_1');
+    await vi.advanceTimersByTimeAsync(5000);
+    stopLine();
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(whole()).toEqual(['scan (cortada)']);
+    expect(busy()).toBe(false);
+  });
+
+  it('una frase lanzada desde un botón sustituye a lo que hubiera, y lo siguiente la espera', async () => {
+    void queueLine('serena', 'scan');
+    void queueLine('serena', 'scan_1');
+    await vi.advanceTimersByTimeAsync(5000);
+    void playLine('serena', 'empecemos');
+    void queueLine('serena', 'intention_1');
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(whole()).toEqual(['scan (cortada)', 'empecemos', 'intention_1']);
   });
 });

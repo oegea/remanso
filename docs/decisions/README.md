@@ -10,6 +10,7 @@ estos documentos dicen qué decidió Remanso con ello y por qué.
 | `registro-de-decisiones.md` | Registro cronológico de decisiones (ADR-001 en adelante): contexto, decisión, evidencia, dónde |
 | `../research/design-decisions.md` | Trazabilidad principio → decisión → evidencia → código, para la versión de terminal |
 | `../architecture/donde-se-lee-cada-dato.md` | Cada dato que se introduce y la pantalla donde se lee |
+| `../design/meditacion-tiempos.md` | Modelo de tiempos de las sesiones de meditación: el papel de cada frase y el silencio que la sigue |
 | `../../web/DESIGN.md` | Sistema de diseño de la versión web (color, tipografía, movimiento, componentes) |
 
 Regla que rige todas las decisiones: **prima la evidencia científica**. Una preferencia de

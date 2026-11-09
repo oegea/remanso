@@ -484,6 +484,74 @@ la evidencia manda.
 - **Consecuencias.** El enlace lleva a un sitio externo con sus propias condiciones; se
   avisa de que se abre fuera. Nada cambia en la aplicación para quien contribuye.
 
+## ADR-026 · Meditar: un modelo de tiempos, y la sesión probada de principio a fin (2026-11-09)
+
+- **Contexto.** Una sesión de veinte minutos en uso real salió mal, y al investigarla
+  aparecieron más fallos de los que se habían notado:
+  1. «Empecemos» se cortaba a los dos segundos y medio. La cola de la voz del ADR-022
+     esperaba a las frases encoladas, pero no a la que lanza el botón de empezar, y la
+     reflexión la pisaba. Como el plan sí reservaba el tiempo de «Empecemos», tras la
+     reflexión quedaban unos veinticinco segundos de silencio sin sentido antes de las
+     tres respiraciones.
+  2. «Asentarse» sólo nombraba los pies y las manos durante cuatro a siete minutos, cuando
+     una sesión de diez podía traer el recorrido de seis zonas: más tiempo daba menos cuerpo.
+  3. La aplicación se bloquea por inactividad a los diez minutos (valor por defecto), y
+     meditando no se toca la pantalla: una sesión de diez minutos perdía la despedida y
+     no quedaba registrada, y una de quince o veinte se cortaba en el minuto diez.
+  4. Si dos frases se encolaban mientras sonaba una tercera, la segunda no sonaba nunca.
+  5. El service worker guarda la voz con `CacheFirst` por nombre de archivo, de modo que
+     la regeneración de Serena del ADR-024 no llegaba a quien ya la tenía guardada.
+  6. Con un apoyo que no es la respiración (un punto a la vista, mirar la mente), los
+     recordatorios pedían volver a la respiración.
+  La causa de fondo era doble. Los tiempos de cada parte se habían ido decidiendo caso a
+  caso (fracciones, márgenes y excepciones), sin una regla común; y cada arreglo se había
+  comprobado por partes, nunca la sesión entera tal como la vive una persona.
+- **Decisión.**
+  - **Un modelo de tiempos** (`docs/design/meditacion-tiempos.md`, `meditation.ts`). Cada
+    frase declara su papel, es decir, lo que pide a quien la escucha (anunciar, acoger,
+    explicar, reflexionar, ajustar, señalar una zona, abrir una práctica, sostener la
+    práctica principal), y una única tabla (`SILENCE`) da el silencio mínimo y máximo de
+    cada papel. Tres reglas: ningún guion se recorta (o cabe entero o se elige otro); lo
+    que sobra se reparte estirando todos los silencios de la sesión en la misma
+    proporción de su margen; y la parte principal lleva los recordatorios que dejan esa
+    proporción más cerca de la mitad. El azar elige el contenido; los tiempos salen del
+    modelo. Consecuencias directas: tras anunciar el círculo no hay espera (un segundo
+    fijo); los recorridos van siempre enteros («Asentarse» pasa por las seis zonas en
+    cualquier duración, con las frases del recorrido: no hay audios nuevos); tras
+    «Empecemos» quedan unos segundos para colocarse antes de la reflexión.
+  - **Cola de la voz** (`voice.ts`): lo que se encola espera también a la frase lanzada
+    desde un botón; una frase directa descarta la cola; parar lo calla todo; la cola no
+    pierde frases cuando se acumulan varias.
+  - **Director de la sesión** (`meditationRun.ts`): módulo sin navegador que, segundo a
+    segundo, decide los pasos, el círculo y el cambio de parte; la pantalla sólo ejecuta lo
+    que le dice. El círculo aparece cuando su explicación ha terminado, nunca mientras la
+    voz habla, y dura tres respiraciones justas.
+  - **La sesión cuenta como uso** (`session.keepAlive`): mientras hay una sesión de
+    meditación en marcha, o se sigue el círculo de la respiración en un episodio de
+    impulso, el bloqueo por inactividad no salta. En pausa sí cuenta el tiempo.
+  - **La voz lleva la huella de su contenido en la dirección** (`voiceUrl`, calculada en
+    `vite.config.ts`): una frase regenerada es una dirección nueva y se descarga; al
+    empezar una sesión se retiran de la caché las tomas que ya no son las vigentes.
+  - **Los recordatorios encajan con el apoyo**: los que hablan de la respiración sólo se
+    usan cuando el apoyo es la respiración.
+- **Cómo se comprueba.** `meditation.test.ts` exige, en todas las duraciones y cientos de
+  semillas, que cada silencio esté dentro de los límites de su papel y que la sesión
+  comparta una sola proporción. `meditationRun.test.ts` recorre sesiones enteras (con y sin
+  voz, con y sin gong, con audios más largos y más cortos de lo medido) con la cola real y
+  un audio simulado (`fake-audio.ts`): todo el guion suena, en orden y sin cortes; el
+  círculo sale tras su explicación y dura treinta segundos; ninguna parte acaba con la voz
+  a medias; el total es el elegido; la despedida suena entera antes del formulario.
+  `e2e/meditar.spec.ts` adelanta el reloj del navegador y exige que una sesión de quince
+  minutos llegue al formulario sin bloqueo. Y `web/tools/session_trace.mjs` graba una
+  sesión real contra la compilación de producción: qué frase suena, cuándo acaba, si algo
+  la corta y qué hay en pantalla. El bloqueo sólo apareció al grabar una sesión a
+  velocidad real hasta el final.
+- **Consecuencias.** Para añadir una práctica basta declarar su guion con el papel de cada
+  frase; para cambiar el ritmo, los números de la tabla. Cualquier cambio en la sesión
+  pasa por la prueba de extremo a extremo y por una traza real antes de darse por bueno.
+  Respecto al ADR-022, las fracciones de cuerpo y respiración, los márgenes por frase y el
+  tope de cuatro recordatorios dejan de existir como reglas propias: salen del modelo.
+
 ## Pendientes
 
 - Temporizador opcional de veinte minutos en el episodio de impulso («decido cuando

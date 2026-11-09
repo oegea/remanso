@@ -19,13 +19,24 @@ export const VOICES: { id: VoiceName; label: string; desc: string }[] = [
 
 export function isVoiceName(v: unknown): v is VoiceName { return v === 'serena' || v === 'ryan'; }
 export function voiceText(id: VoiceId): string { return LINES[id]; }
+/**
+ * Cada archivo lleva en la dirección una huella de su contenido (la calcula vite.config.ts
+ * al compilar). El service worker guarda la voz con CacheFirst: sin la huella, una frase
+ * regenerada no llegaría nunca a quien ya tuviera guardada la toma anterior.
+ */
+const REV: Partial<Record<VoiceName, Record<string, string>>> = typeof __VOICE_REV__ === 'undefined' ? {} : __VOICE_REV__;
 export function voiceUrl(voice: VoiceName, id: VoiceId): string {
-  return `${import.meta.env.BASE_URL}voz/${voice}/${id}.mp3`;
+  const rev = REV[voice]?.[id];
+  return `${import.meta.env.BASE_URL}voz/${voice}/${id}.mp3${rev ? `?v=${rev}` : ''}`;
 }
 
 let el: HTMLAudioElement | null = null;
-let seq = 0;
+/** Sube al parar todo o al lanzar una frase directa: lo que hubiera en cola deja de tocar. */
+let epoch = 0;
 let settle: (() => void) | null = null;
+/** La última frase lanzada o encolada: la siguiente que se encole espera a que acabe. */
+let tail: Promise<void> = Promise.resolve();
+let queued = 0;
 
 function finish(): void { const f = settle; settle = null; f?.(); }
 
@@ -40,14 +51,9 @@ function element(): HTMLAudioElement {
   return el;
 }
 
-/**
- * Reproduce una frase, cortando la que estuviera sonando. Resuelve cuando termina (o
- * enseguida si el navegador no deja reproducir). No hay nada asíncrono antes de `play()`,
- * para que valga dentro de un gesto.
- */
-export function playLine(voice: VoiceName, id: VoiceId, volume = 1): Promise<void> {
+/** Hace sonar una frase ya. Resuelve cuando termina (o enseguida si el navegador no deja reproducir). */
+function start(voice: VoiceName, id: VoiceId, volume: number): Promise<void> {
   const a = element();
-  seq++;
   finish();
   return new Promise<void>((resolve) => {
     settle = resolve;
@@ -57,21 +63,30 @@ export function playLine(voice: VoiceName, id: VoiceId, volume = 1): Promise<voi
   });
 }
 
-let tail: Promise<void> = Promise.resolve();
-let queued = 0;
+/**
+ * Reproduce una frase ahora mismo, cortando la que estuviera sonando y descartando las que
+ * esperaban en cola. Es para lo que nace de un gesto (el botón de empezar, el de prueba):
+ * no hay nada asíncrono antes de `play()`. Lo que se encole después espera a que termine.
+ */
+export function playLine(voice: VoiceName, id: VoiceId, volume = 1): Promise<void> {
+  epoch++;
+  const p = start(voice, id, volume);
+  tail = p.catch(() => {});
+  return p;
+}
 
 /**
- * Como `playLine`, pero espera a que acaben la frase que suena y las que ya estén en cola
- * (orden de llegada). Ninguna frase corta a otra. Si mientras espera se para todo
- * (`stopLine`) o alguien llama a `playLine` directamente, la frase en cola no suena.
+ * Pone una frase en cola: suena cuando acaban la que suena (venga de `playLine` o de la
+ * cola) y las que ya esperaban, en orden de llegada. Ninguna frase corta a otra. Si
+ * mientras espera se para todo (`stopLine`) o se lanza una frase directa (`playLine`), no suena.
  */
 export function queueLine(voice: VoiceName, id: VoiceId, volume = 1): Promise<void> {
-  const mine = seq;
+  const mine = epoch;
   queued++;
   const p = tail.then(() => {
     queued--;
-    if (seq !== mine) return;
-    return playLine(voice, id, volume);
+    if (epoch !== mine) return;
+    return start(voice, id, volume);
   });
   tail = p.catch(() => {});
   return p;
@@ -81,7 +96,7 @@ export function queueLine(voice: VoiceName, id: VoiceId, volume = 1): Promise<vo
 export function busy(): boolean { return settle !== null || queued > 0; }
 
 export function stopLine(): void {
-  seq++; // las frases en cola ven que ya no toca y no suenan
+  epoch++; // las frases en cola ven que ya no toca y no suenan
   finish();
   if (el) { try { el.pause(); el.removeAttribute('src'); el.load(); } catch { /* nada */ } }
 }
@@ -89,11 +104,22 @@ export function stopLine(): void {
 export function pauseLine(): void { if (el && !el.paused) el.pause(); }
 export function resumeLine(): void { if (el && el.paused && !el.ended && el.getAttribute('src')) void el.play().catch(() => {}); }
 
-/** Pide todas las frases de una voz para que el service worker las guarde (sin fallar nunca). */
+/** Nombre de la caché de la voz en el service worker (el mismo que en vite.config.ts). */
+const VOICE_CACHE = 'remanso-voz-v1';
+
+/**
+ * Pide todas las frases de una voz para que el service worker las guarde (sin fallar nunca)
+ * y, al acabar, retira de la caché las tomas que ya no son las vigentes.
+ */
 export async function warmVoice(voice: VoiceName): Promise<void> {
   for (const id of VOICE_IDS) {
     try { await fetch(voiceUrl(voice, id), { cache: 'force-cache' }); } catch { /* sin red: se servirá cuando toque */ }
   }
+  try {
+    const current = new Set(VOICES.flatMap((v) => VOICE_IDS.map((id) => new URL(voiceUrl(v.id, id), location.href).href)));
+    const cache = await caches.open(VOICE_CACHE);
+    for (const req of await cache.keys()) if (!current.has(req.url)) await cache.delete(req);
+  } catch { /* sin caché: nada que limpiar */ }
 }
 
 if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __remansoVoice: unknown }).__remansoVoice = { element: () => el };
