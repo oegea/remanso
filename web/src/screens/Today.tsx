@@ -132,13 +132,12 @@ export function Today() {
             <h2 id="h-hoy" className="list-head" style={{ padding: 0 }}>{T.HOME_TODAY}</h2>
             <div className="card" style={{ padding: '0 16px' }}>
               {data.acts.map(({ a, st }) => (
-                <div key={a.id} className="list-item" style={{ minHeight: 48 }}>
-                  <button className="btn btn-icon" aria-label={st === true ? 'Hecha hoy; tocar para marcar no hecha' : st === false ? 'Marcada no hecha; tocar para quitar el registro' : 'Sin registro hoy; tocar para marcar hecha'}
-                    onClick={() => { const next = st === undefined ? true : st ? false : null; actions.log(db, a.id, t, next, ''); bumpData(); if (next === false) announce(`${T.LAPSE_LINE1}`); }}>
-                    <span className={`dot ${st === true ? 'is-done' : st === false ? 'is-not' : 'is-blank'}`} style={{ width: 20, height: 20 }} />
-                  </button>
+                // Toda la fila marca la acción (el texto no lleva a ningún sitio): la bolita sólo enseña el estado.
+                <button key={a.id} className="list-item" style={{ minHeight: 48 }} aria-label={`${a.name}. ${st === true ? 'Hecha hoy; tocar para marcar no hecha' : st === false ? 'Marcada no hecha; tocar para quitar el registro' : 'Sin registro hoy; tocar para marcar hecha'}`}
+                  onClick={() => { const next = st === undefined ? true : st ? false : null; actions.log(db, a.id, t, next, ''); bumpData(); if (next === false) announce(`${T.LAPSE_LINE1}`); }}>
+                  <span className="check-slot" aria-hidden="true"><span className={`dot ${st === true ? 'is-done' : st === false ? 'is-not' : 'is-blank'}`} style={{ width: 20, height: 20 }} /></span>
                   <span className="grow"><span>{a.name}</span>{a.cue && <span className="meta" style={{ display: 'block' }}>{a.cue}</span>}</span>
-                </div>
+                </button>
               ))}
             </div>
           </section>

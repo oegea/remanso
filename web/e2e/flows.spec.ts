@@ -168,6 +168,16 @@ test.describe.serial('recorrido completo', () => {
     // Hoy muestra la acción y el objetivo.
     await go(page, 'Hoy');
     await expect(page.getByText('Leer en el sofá')).toBeVisible();
+    // En Hoy la acción se marca tocando en cualquier punto de su fila, no sólo en la bolita:
+    // hecha → no hecha → sin registro → hecha otra vez.
+    const actionRow = page.getByRole('button', { name: /^Leer en el sofá\. / });
+    await expect(actionRow).toHaveAccessibleName(/Hecha hoy/);
+    await page.getByText('Leer en el sofá').click();
+    await expect(actionRow).toHaveAccessibleName(/Marcada no hecha/);
+    await page.getByText('Leer en el sofá').click();
+    await expect(actionRow).toHaveAccessibleName(/Sin registro hoy/);
+    await page.getByText('Leer en el sofá').click();
+    await expect(actionRow).toHaveAccessibleName(/Hecha hoy/);
     await expect(page.getByText(/1 objetivo activo/)).toBeVisible();
 
     // Ajustes: activar cierre del día; Revisión: sesión que crea tareas.

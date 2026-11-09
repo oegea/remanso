@@ -410,10 +410,10 @@ function ActionsTab({ goal }: { goal: goals.Goal }) {
         return (
           <div key={a.id} className="card stack" style={{ opacity: a.paused || a.archived ? 0.7 : 1 }}>
             <div className="row">
-              <button className="btn btn-icon" aria-label={st === true ? 'Hecha hoy; tocar para marcar no hecha' : st === false ? 'Marcada no hecha; tocar para quitar el registro' : 'Sin registro hoy; tocar para marcar hecha'} onClick={() => { const next = st === undefined ? true : st ? false : null; actions.log(db, a.id, t, next, ''); bumpData(); if (next === false) announce(`${T.LAPSE_LINE1} ${a.name}: ${s.last30} de los últimos 30 días.`); }}>
-                <span className={`dot ${st === true ? 'is-done' : st === false ? 'is-not' : 'is-blank'}`} style={{ width: 22, height: 22 }} />
+              <button className="grow row" style={{ textAlign: 'left', minHeight: 44 }} aria-label={`${a.name}. ${st === true ? 'Hecha hoy; tocar para marcar no hecha' : st === false ? 'Marcada no hecha; tocar para quitar el registro' : 'Sin registro hoy; tocar para marcar hecha'}`} onClick={() => { const next = st === undefined ? true : st ? false : null; actions.log(db, a.id, t, next, ''); bumpData(); if (next === false) announce(`${T.LAPSE_LINE1} ${a.name}: ${s.last30} de los últimos 30 días.`); }}>
+                <span className="check-slot" aria-hidden="true"><span className={`dot ${st === true ? 'is-done' : st === false ? 'is-not' : 'is-blank'}`} style={{ width: 22, height: 22 }} /></span>
+                <span className="grow"><span style={{ fontWeight: 600 }}>{a.avoid ? 'evitar: ' : ''}{a.name}</span><span className="meta" style={{ display: 'block' }}>{[a.paused ? 'pausada' : null, actions.Schedule.describe(a.schedule), a.cue || null].filter(Boolean).join(' · ')}</span></span>
               </button>
-              <span className="grow"><span style={{ fontWeight: 600 }}>{a.avoid ? 'evitar: ' : ''}{a.name}</span><span className="meta" style={{ display: 'block' }}>{[a.paused ? 'pausada' : null, actions.Schedule.describe(a.schedule), a.cue || null].filter(Boolean).join(' · ')}</span></span>
               <button className="btn btn-icon" aria-label={`Opciones de ${a.name}`} onClick={() => setAsk({ menu: a })}><Icon name="more" /></button>
             </div>
             <div className="row" style={{ gap: 16, flexWrap: 'wrap' }}>
